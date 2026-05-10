@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "Recipe category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Ingredient": {
+      "title": "Ingredient",
+      "description": "Master ingredient data",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "caloriesPerUnit": { "type": "number" }
+      },
+      "required": ["name", "unit"]
+    },
+    "Recipe": {
+      "title": "Recipe",
+      "description": "A culinary recipe",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "prepTime": { "type": "integer" },
+        "cookTime": { "type": "integer" },
+        "difficulty": { "type": "integer" },
+        "servings": { "type": "integer" },
+        "categoryId": { "type": "string" },
+        "userId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "prepTime", "difficulty", "servings", "categoryId", "userId"]
+    },
+    "RecipeStep": {
+      "title": "Recipe Step",
+      "description": "A single step in a recipe",
+      "type": "object",
+      "properties": {
+        "order": { "type": "integer" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["order", "description"]
+    },
+    "RecipeIngredient": {
+      "title": "Recipe Ingredient",
+      "description": "An ingredient linked to a recipe with quantity",
+      "type": "object",
+      "properties": {
+        "ingredientId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "optional": { "type": "boolean" }
+      },
+      "required": ["ingredientId", "quantity"]
+    },
+    "MealPlan": {
+      "title": "Meal Plan",
+      "description": "Weekly meal planner entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "recipeId": { "type": "string" },
+        "mealType": { "type": "string" }
+      },
+      "required": ["userId", "date", "recipeId", "mealType"]
+    },
+    "UserFavorite": {
+      "title": "User Favorite",
+      "description": "A recipe favorited by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "recipeId": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "recipeId"]
+    }
+  },
+  "firestore": {
+    "categories": {
+      "schema": "Category",
+      "description": "Global recipe categories"
+    },
+    "ingredients": {
+      "schema": "Ingredient",
+      "description": "Global master list of ingredients"
+    },
+    "recipes": {
+      "schema": "Recipe",
+      "description": "User and public recipes"
+    },
+    "recipes/{recipeId}/steps": {
+      "schema": "RecipeStep",
+      "description": "Steps for a specific recipe"
+    },
+    "recipes/{recipeId}/ingredients": {
+      "schema": "RecipeIngredient",
+      "description": "Ingredients for a specific recipe"
+    },
+    "mealPlans": {
+      "schema": "MealPlan",
+      "description": "User meal planning data"
+    },
+    "userFavorites": {
+      "schema": "UserFavorite",
+      "description": "User favorite recipes"
+    }
+  }
+}
