@@ -1,16 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Search as SearchIcon, SlidersHorizontal, ChevronRight, X, Clock, ChefHat, Star } from 'lucide-react';
+import { 
+  Search as SearchIcon, 
+  SlidersHorizontal, 
+  ChevronRight, 
+  X, 
+  Clock, 
+  ChefHat, 
+  Star,
+  Coffee,
+  UtensilsCrossed,
+  Dessert,
+  Apple,
+  Salad,
+  Pizza,
+  Zap
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Recipe, Category } from '../types';
 import { getCategories, getFilteredRecipes } from '../services/recipeService';
+
+const getCategoryIcon = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('petit') || n.includes('breakfast')) return <Coffee size={20} />;
+  if (n.includes('plat') || n.includes('main') || n.includes('dinner')) return <UtensilsCrossed size={20} />;
+  if (n.includes('dessert') || n.includes('sweet')) return <Dessert size={20} />;
+  if (n.includes('entrée') || n.includes('starter') || n.includes('salad')) return <Salad size={20} />;
+  if (n.includes('snack') || n.includes('goûter')) return <Apple size={20} />;
+  if (n.includes('pizza') || n.includes('fast')) return <Pizza size={20} />;
+  return <Zap size={20} />; // Default icon
+};
 
 export const Catalog: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [categoryRecipes, setCategoryRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
+  const [catLoading, setCatLoading] = useState(false);
   
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -19,20 +47,34 @@ export const Catalog: React.FC = () => {
   const [showAllCollections, setShowAllCollections] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+  const COLLECTION_LIMIT = 3;
 
   useEffect(() => {
-    getCategories().then(setCategories);
-    fetchFilteredRecipes();
+    getCategories().then(cats => {
+      // Deduplicate by name
+      const uniqueCats: Category[] = [];
+      const names = new Set();
+      cats.forEach(cat => {
+        if (!names.has(cat.name)) {
+          names.add(cat.name);
+          uniqueCats.push(cat);
+        }
+      });
+      setCategories(uniqueCats);
+    });
   }, []);
 
-  const fetchFilteredRecipes = async (catId?: string | null, diff?: number | null, time?: number | null) => {
+  useEffect(() => {
+    fetchAllRecipes();
+  }, [selectedCategory, selectedDifficulty, selectedMaxTime]);
+
+  const fetchAllRecipes = async () => {
     setLoading(true);
-    setCurrentPage(1); // Reset to first page on filter change
     try {
       const results = await getFilteredRecipes({ 
-        categoryId: catId !== undefined ? (catId || undefined) : (selectedCategory || undefined),
-        difficulty: diff !== undefined ? (diff || undefined) : (selectedDifficulty || undefined),
-        maxTime: time !== undefined ? (time || undefined) : (selectedMaxTime || undefined)
+        categoryId: selectedCategory || undefined,
+        difficulty: selectedDifficulty || undefined,
+        maxTime: selectedMaxTime || undefined
       });
       setRecipes(results);
     } catch (e) {
@@ -42,22 +84,34 @@ export const Catalog: React.FC = () => {
     }
   };
 
+  const fetchCategoryRecipes = async (catId: string) => {
+    setCatLoading(true);
+    try {
+      const results = await getFilteredRecipes({ categoryId: catId });
+      setCategoryRecipes(results);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
   const handleCategorySelect = (id: string | null) => {
-    const newVal = selectedCategory === id ? null : id;
-    setSelectedCategory(newVal);
-    fetchFilteredRecipes(newVal, selectedDifficulty, selectedMaxTime);
+    if (!id || selectedCategory === id) {
+      setSelectedCategory(null);
+      setCategoryRecipes([]);
+    } else {
+      setSelectedCategory(id);
+      fetchCategoryRecipes(id);
+    }
   };
 
   const handleDifficultySelect = (val: number | null) => {
-    const newVal = selectedDifficulty === val ? null : val;
-    setSelectedDifficulty(newVal);
-    fetchFilteredRecipes(selectedCategory, newVal, selectedMaxTime);
+    setSelectedDifficulty(selectedDifficulty === val ? null : val);
   };
 
   const handleTimeSelect = (val: number | null) => {
-    const newVal = selectedMaxTime === val ? null : val;
-    setSelectedMaxTime(newVal);
-    fetchFilteredRecipes(selectedCategory, selectedDifficulty, newVal);
+    setSelectedMaxTime(selectedMaxTime === val ? null : val);
   };
 
   const clearFilters = () => {
@@ -66,19 +120,31 @@ export const Catalog: React.FC = () => {
     setSelectedMaxTime(null);
     setShowFilters(false);
     setCurrentPage(1);
-    fetchFilteredRecipes(null, null, null);
   };
 
+  const isFiltering = search.trim() !== '' || selectedDifficulty !== null || selectedMaxTime !== null || selectedCategory !== null;
+  const isSearchActive = search.trim() !== '';
+  const isSheetFilterActive = selectedDifficulty !== null || selectedMaxTime !== null;
+  
+  // Hide sections if user is searching or using sheet filters
+  // If they only selected a category via the accordion, we keep the sections shown
+  const shouldHideSections = isSearchActive || isSheetFilterActive;
+
   // Pagination Logic
+  const filteredRecipes = recipes.filter(r => 
+    r.title.toLowerCase().includes(search.toLowerCase()) ||
+    r.description.toLowerCase().includes(search.toLowerCase())
+  );
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentRecipes = recipes.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(recipes.length / itemsPerPage);
+  const currentRecipes = filteredRecipes.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
 
-  const displayedCategories = showAllCollections ? categories : categories.slice(0, 3);
+  const displayedCategories = showAllCollections ? categories : categories.slice(0, COLLECTION_LIMIT);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-1">
       <header>
         <h1 className="text-3xl font-serif">Explore Catalogue</h1>
         <p className="text-gray-500 text-sm mt-1">Discover over 500 delicious recipes</p>
@@ -95,20 +161,145 @@ export const Catalog: React.FC = () => {
         />
         <button 
           onClick={() => setShowFilters(true)}
-          className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl shadow-sm transition-colors ${showFilters || selectedCategory || selectedDifficulty ? 'bg-brand-olive text-white' : 'text-brand-olive bg-white'}`}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl shadow-sm transition-colors ${showFilters || selectedCategory || selectedDifficulty || selectedMaxTime ? 'bg-brand-olive text-white' : 'text-brand-olive bg-white'}`}
         >
           <SlidersHorizontal size={18} />
         </button>
       </div>
 
+      {!shouldHideSections && (
+        <>
+          {/* Top Collections (Categories) */}
+          <section className="space-y-4">
+            <div className="flex justify-between items-center px-2">
+              <h3 className="font-serif text-xl">Top Collections</h3>
+              {categories.length > COLLECTION_LIMIT && (
+                <button 
+                  onClick={() => setShowAllCollections(!showAllCollections)}
+                  className="text-[10px] font-bold text-brand-olive uppercase tracking-widest"
+                >
+                  {showAllCollections ? 'Show Less' : `View All (${categories.length})`}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col gap-4">
+              {displayedCategories.map((cat) => (
+                <div key={cat.id} className="space-y-4">
+                  <motion.div 
+                    whileHover={{ scale: 0.98 }}
+                    onClick={() => handleCategorySelect(cat.id)}
+                    className={`relative h-28 rounded-3xl overflow-hidden group cursor-pointer border-2 transition-all ${selectedCategory === cat.id ? 'border-brand-olive' : 'border-transparent'}`}
+                  >
+                    <img src={cat.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&fit=crop'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={cat.name} />
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+                    <div className="absolute inset-0 flex items-center justify-between px-8 text-white">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+                          {getCategoryIcon(cat.name)}
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-serif font-medium">{cat.name}</h4>
+                          <span className="text-[10px] uppercase tracking-widest opacity-80">{selectedCategory === cat.id ? 'Viewing Collection' : 'Explore Collection'}</span>
+                        </div>
+                      </div>
+                      <motion.div 
+                        animate={{ rotate: selectedCategory === cat.id ? 90 : 0 }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selectedCategory === cat.id ? 'bg-brand-olive' : 'bg-white/20 backdrop-blur'}`}
+                      >
+                        <ChevronRight size={20} />
+                      </motion.div>
+                    </div>
+                  </motion.div>
+
+                  {/* Accordion Content: Category specific horizontal list */}
+                  <AnimatePresence>
+                    {selectedCategory === cat.id && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-2">
+                          {catLoading ? (
+                            [1, 2, 3].map(i => (
+                              <div key={i} className="w-48 h-64 bg-gray-100 rounded-[32px] animate-pulse shrink-0" />
+                            ))
+                          ) : categoryRecipes.length > 0 ? (
+                            categoryRecipes.map(recipe => (
+                              <Link key={recipe.id} to={`/recipe/${recipe.id}`} className="w-48 shrink-0 group">
+                                <div className="space-y-2">
+                                  <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden relative">
+                                    <img src={recipe.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&fit=crop'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={recipe.title} />
+                                  </div>
+                                  <h4 className="font-serif text-sm leading-tight truncate px-1">{recipe.title}</h4>
+                                  <div className="flex items-center gap-2 text-[8px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                                    <Clock size={8} /> {recipe.prepTime + recipe.cookTime}m
+                                  </div>
+                                </div>
+                              </Link>
+                            ))
+                          ) : (
+                            <div className="w-full py-10 text-center text-xs text-gray-400 italic">
+                              No recipes in this collection yet.
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Difficulty Filters */}
+          <section className="space-y-4">
+            <h3 className="font-serif text-xl px-2">Difficulty Level</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {[
+                { label: 'Beginner', val: 1 },
+                { label: 'Intermediate', val: 3 },
+                { label: 'Expert', val: 5 }
+              ].map((level) => (
+                <button 
+                  key={level.label}
+                  onClick={() => handleDifficultySelect(level.val)}
+                  className={`px-6 py-3 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${selectedDifficulty === level.val ? 'bg-brand-olive border-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white border-gray-100 text-gray-500'}`}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Time Filters */}
+          <section className="space-y-4">
+            <h3 className="font-serif text-xl px-2">Max Cooking Time</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {[15, 30, 45, 60].map((time) => (
+                <button 
+                  key={time}
+                  onClick={() => handleTimeSelect(time)}
+                  className={`px-6 py-3 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${selectedMaxTime === time ? 'bg-brand-olive border-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white border-gray-100 text-gray-500'}`}
+                >
+                  Under {time} min
+                </button>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
       {/* Results Section */}
-      <section className="space-y-4">
+      <section className="space-y-4 pb-10">
         <div className="flex justify-between items-center px-2">
           <h3 className="font-serif text-xl">
-            {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'All Recipes'}
+            {isFiltering ? 'Search Results' : 'All Recipes'}
             {selectedDifficulty ? ` • Level ${selectedDifficulty}` : ''}
+            {selectedCategory && isFiltering ? ` • ${categories.find(c => c.id === selectedCategory)?.name}` : ''}
           </h3>
-          {(selectedCategory || selectedDifficulty) && (
+          {isFiltering && (
             <button onClick={clearFilters} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Clear</button>
           )}
         </div>
@@ -119,7 +310,7 @@ export const Catalog: React.FC = () => {
               <div key={i} className="aspect-square bg-gray-100 rounded-[32px] animate-pulse" />
             ))}
           </div>
-        ) : recipes.length > 0 ? (
+        ) : filteredRecipes.length > 0 ? (
           <>
             <div className="grid grid-cols-2 gap-4">
               {currentRecipes.map((recipe) => (
@@ -168,81 +359,16 @@ export const Catalog: React.FC = () => {
               <SearchIcon size={32} />
             </div>
             <p className="text-gray-400 text-sm">No recipes found matching these filters.</p>
+            {isFiltering && (
+              <button 
+                onClick={clearFilters}
+                className="text-[10px] font-bold text-brand-olive underline uppercase tracking-widest"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
-      </section>
-
-      {/* Top Collections (Categories) */}
-      <section className="space-y-4">
-        <div className="flex justify-between items-center px-2">
-          <h3 className="font-serif text-xl">Top Collections</h3>
-          {categories.length > 3 && (
-            <button 
-              onClick={() => setShowAllCollections(!showAllCollections)}
-              className="text-[10px] font-bold text-brand-olive uppercase tracking-widest"
-            >
-              {showAllCollections ? 'Show Less' : 'View All'}
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-1 gap-4">
-          {displayedCategories.map((cat) => (
-            <motion.div 
-              key={cat.id}
-              whileHover={{ scale: 0.98 }}
-              onClick={() => handleCategorySelect(cat.id)}
-              className={`relative h-28 rounded-3xl overflow-hidden group cursor-pointer border-2 transition-all ${selectedCategory === cat.id ? 'border-brand-olive' : 'border-transparent'}`}
-            >
-              <img src={cat.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&fit=crop'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={cat.name} />
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
-              <div className="absolute inset-0 flex items-center justify-between px-8 text-white">
-                <div>
-                  <h4 className="text-xl font-serif font-medium">{cat.name}</h4>
-                  <span className="text-[10px] uppercase tracking-widest opacity-80">Explore Collection</span>
-                </div>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selectedCategory === cat.id ? 'bg-brand-olive' : 'bg-white/20 backdrop-blur'}`}>
-                  <ChevronRight size={20} />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Difficulty Filters */}
-      <section className="space-y-4">
-        <h3 className="font-serif text-xl px-2">Difficulty Level</h3>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {[
-            { label: 'Beginner', val: 1 },
-            { label: 'Intermediate', val: 3 },
-            { label: 'Expert', val: 5 }
-          ].map((level) => (
-            <button 
-              key={level.label}
-              onClick={() => handleDifficultySelect(level.val)}
-              className={`px-6 py-3 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${selectedDifficulty === level.val ? 'bg-brand-olive border-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white border-gray-100 text-gray-500'}`}
-            >
-              {level.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Time Filters */}
-      <section className="space-y-4 pb-10">
-        <h3 className="font-serif text-xl px-2">Max Cooking Time</h3>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {[15, 30, 45, 60].map((time) => (
-            <button 
-              key={time}
-              onClick={() => handleTimeSelect(time)}
-              className={`px-6 py-3 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${selectedMaxTime === time ? 'bg-brand-olive border-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white border-gray-100 text-gray-500'}`}
-            >
-              Under {time} min
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* Filter Sidebar Placeholder (Sheet) */}

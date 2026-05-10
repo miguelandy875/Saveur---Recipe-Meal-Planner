@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Star, ChevronRight, Clock, ChefHat, Plus } from 'lucide-react';
+import { Star, ChevronRight, Clock, ChefHat, Plus, Coffee, UtensilsCrossed, Dessert, Apple, Salad, Pizza, Zap } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { getFeaturedRecipes, getCategories } from '../services/recipeService';
 import { seedDatabase } from '../services/seedService';
 import { Recipe, Category } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
+
+const getCategoryIcon = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('petit') || n.includes('breakfast')) return <Coffee size={24} />;
+  if (n.includes('plat') || n.includes('main') || n.includes('dinner')) return <UtensilsCrossed size={24} />;
+  if (n.includes('dessert') || n.includes('sweet')) return <Dessert size={24} />;
+  if (n.includes('entrée') || n.includes('starter') || n.includes('salad')) return <Salad size={24} />;
+  if (n.includes('snack') || n.includes('goûter')) return <Apple size={24} />;
+  if (n.includes('pizza') || n.includes('fast')) return <Pizza size={24} />;
+  return <Zap size={24} />; // Default icon
+};
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
@@ -22,7 +33,17 @@ export const Home: React.FC = () => {
         }
         const [r, c] = await Promise.all([getFeaturedRecipes(4), getCategories()]);
         setRecipes(r);
-        setCategories(c);
+        
+        // Deduplicate categories by name
+        const uniqueCats: Category[] = [];
+        const names = new Set();
+        c.forEach(cat => {
+          if (!names.has(cat.name)) {
+            names.add(cat.name);
+            uniqueCats.push(cat);
+          }
+        });
+        setCategories(uniqueCats);
       } catch (e) {
         console.error(e);
       } finally {
@@ -78,30 +99,40 @@ export const Home: React.FC = () => {
 
       {/* Categories */}
       <section>
-        <div className="flex justify-between items-end mb-4">
+        <div className="flex justify-between items-end mb-4 px-1">
           <h3 className="text-xl font-serif">Categories</h3>
-          <button className="text-brand-olive text-sm font-semibold flex items-center gap-1">
-            View all <ChevronRight size={16} />
-          </button>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-          {categories.length > 0 ? categories.map((cat) => (
-            <div key={cat.id} className="flex flex-col items-center gap-2 shrink-0">
-              <div className="w-16 h-16 rounded-2xl bg-brand-olive/10 flex items-center justify-center overflow-hidden">
-                <img src={cat.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop'} alt={cat.name} className="w-full h-full object-cover" />
-              </div>
-              <span className="text-xs font-semibold text-gray-600 uppercase tracking-tighter">{cat.name}</span>
-            </div>
-          )) : (
-            ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegan'].map((name) => (
-              <div key={name} className="flex flex-col items-center gap-2 shrink-0">
-                <div className="w-16 h-16 rounded-2xl bg-brand-olive/10 flex items-center justify-center p-4">
-                  <ChefHat className="text-brand-olive" />
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+          {categories.slice(0, 10).map((cat) => (
+            <motion.div 
+              key={cat.id} 
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/catalog', { state: { categoryId: cat.id } })}
+              className="flex flex-col items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <div className="w-16 h-16 rounded-2xl relative overflow-hidden group shadow-sm border border-gray-100">
+                <img 
+                  src={cat.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&h=120&fit=crop'} 
+                  alt={cat.name} 
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
+                    {getCategoryIcon(cat.name)}
+                  </div>
                 </div>
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-tighter">{name}</span>
               </div>
-            ))
-          )}
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">{cat.name}</span>
+            </motion.div>
+          ))}
+
+          {categories.length === 0 && Array(5).fill(null).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-2 shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center animate-pulse" />
+              <div className="w-10 h-2 bg-gray-50 rounded animate-pulse" />
+            </div>
+          ))}
         </div>
       </section>
 

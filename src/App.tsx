@@ -9,7 +9,6 @@ import { Profile } from './pages/Profile';
 import { RecipeDetail } from './pages/RecipeDetail';
 import { CreateRecipe } from './pages/CreateRecipe';
 import { DebugTests } from './pages/DebugTests';
-import { Dashboard } from './pages/Dashboard';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -27,13 +26,12 @@ function AppRoutes() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/profile" />} />
           <Route path="/catalog" element={<Catalog />} />
-          <Route path="/plan" element={user ? <Plan /> : <Navigate to="/profile" />} />
-          <Route path="/groceries" element={user ? <Groceries /> : <Navigate to="/profile" />} />
+          <Route path="/plan" element={<Plan />} />
+          <Route path="/groceries" element={<Groceries />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/recipe/:id" element={<RecipeDetail />} />
-          <Route path="/create-recipe" element={user ? <CreateRecipe /> : <Navigate to="/profile" />} />
+          <Route path="/create-recipe" element={<CreateRecipe />} />
           <Route path="/debug" element={<DebugTests />} />
         </Routes>
       </Layout>

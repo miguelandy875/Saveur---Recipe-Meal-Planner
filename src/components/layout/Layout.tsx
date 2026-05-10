@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Calendar, ShoppingBag, User, LayoutDashboard } from 'lucide-react';
+import { Home, Search, Calendar, ShoppingBag, User } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
@@ -10,14 +10,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </main>
       
       <nav className="bottom-nav">
-        <NavLink 
-          to="/dashboard" 
-          className={({ isActive }) => `flex flex-col items-center gap-1 ${isActive ? 'text-brand-olive' : 'text-gray-400'}`}
-        >
-          <LayoutDashboard size={24} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Board</span>
-        </NavLink>
-
         <NavLink 
           to="/" 
           className={({ isActive }) => `flex flex-col items-center gap-1 ${isActive ? 'text-brand-olive' : 'text-gray-400'}`}
