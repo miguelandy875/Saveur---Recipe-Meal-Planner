@@ -48,7 +48,7 @@ export const Groceries: React.FC = () => {
         </button>
       </div>
 
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map(cat => (
           <section key={cat} className="space-y-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] px-2">{cat}</h3>

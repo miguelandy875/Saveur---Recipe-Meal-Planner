@@ -142,7 +142,7 @@ export const Plan: React.FC = () => {
       </header>
 
       {/* Date Picker */}
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+      <div className="flex md:grid md:grid-cols-7 gap-3 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
         {days.map((day, i) => {
           const dateNode = new Date(getDayDate(i));
           const dayNum = dateNode.getDate();
@@ -150,7 +150,7 @@ export const Plan: React.FC = () => {
             <button 
               key={day}
               onClick={() => setSelectedDay(i)}
-              className={`flex flex-col items-center gap-2 min-w-[64px] py-4 rounded-3xl transition-all ${selectedDay === i ? 'bg-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white text-gray-500 border border-gray-100'}`}
+              className={`flex flex-col items-center gap-2 min-w-[64px] md:min-w-0 md:w-full py-4 rounded-3xl transition-all ${selectedDay === i ? 'bg-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white text-gray-500 border border-gray-100'}`}
             >
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{day}</span>
               <span className={`text-xl font-serif ${selectedDay === i ? 'text-white' : 'text-gray-900'}`}>{dayNum}</span>
@@ -161,7 +161,7 @@ export const Plan: React.FC = () => {
       </div>
 
       {/* Meal Selection */}
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => {
           const meal = mealPlan[type];
           return (

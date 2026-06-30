@@ -141,7 +141,7 @@ export const Home: React.FC = () => {
         <div className="flex justify-between items-end mb-4">
           <h3 className="text-xl font-serif">Recommended for you</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {(recipes.length > 0 ? recipes : Array(4).fill(null)).map((recipe, i) => (
             <Link key={recipe?.id || i} to={recipe ? `/recipe/${recipe.id}` : '#'} className="group">
               <motion.div 

@@ -88,7 +88,7 @@ export const Profile: React.FC = () => {
       </header>
 
       {/* Stats Section */}
-      <section className="grid grid-cols-2 gap-4 px-2">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-6 px-2">
         {stats.map((stat, i) => (
           <motion.div 
             key={i}
@@ -141,9 +141,9 @@ export const Profile: React.FC = () => {
           </button>
         </div>
         
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {loading ? (
-            [1, 2].map(i => (
+            [1, 2, 3].map(i => (
               <div key={i} className="h-24 bg-gray-50 rounded-[32px] animate-pulse" />
             ))
           ) : myRecipes.length > 0 ? (

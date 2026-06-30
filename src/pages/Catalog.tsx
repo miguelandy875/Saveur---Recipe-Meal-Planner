@@ -305,14 +305,14 @@ export const Catalog: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="aspect-square bg-gray-100 rounded-[32px] animate-pulse" />
             ))}
           </div>
         ) : filteredRecipes.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {currentRecipes.map((recipe) => (
                 <Link key={recipe.id} to={`/recipe/${recipe.id}`} className="group">
                   <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
