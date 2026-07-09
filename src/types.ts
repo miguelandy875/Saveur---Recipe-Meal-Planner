@@ -1,3 +1,11 @@
+export interface AuthUser {
+  uid: string;
+  displayName: string;
+  email: string;
+  role: 'user' | 'admin';
+  photoURL?: string;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -8,49 +16,70 @@ export interface Ingredient {
   id: string;
   name: string;
   unit: string;
+  category?: string;
   caloriesPerUnit?: number;
+}
+
+export interface RecipeIngredient {
+  id?: string;
+  ingredientId?: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  optional: boolean;
+  category?: string;
+}
+
+export interface RecipeStep {
+  id?: string;
+  order: number;
+  title?: string;
+  description: string;
 }
 
 export interface Recipe {
   id: string;
   title: string;
   description: string;
-  prepTime: number; // in minutes
-  cookTime: number; // in minutes
-  difficulty: number; // 1-5
+  prepTime: number;
+  cookTime: number;
+  difficulty: number;
   servings: number;
   categoryId: string;
+  categoryName?: string;
   userId: string;
+  userName?: string;
   imageUrl?: string;
   isPublic: boolean;
-  createdAt: any;
+  isFavorite?: boolean;
+  ingredients?: RecipeIngredient[];
+  steps?: RecipeStep[];
+  createdAt: string;
 }
 
-export interface RecipeStep {
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+export interface MealPlanEntry {
   id: string;
-  order: number;
-  description: string;
-  imageUrl?: string;
+  userId: string;
+  date: string;
+  recipeId: string;
+  mealType: MealType;
+  recipe?: Recipe | null;
 }
 
-export interface RecipeIngredient {
+export interface GroceryItem {
   id: string;
-  ingredientId: string;
+  name: string;
   quantity: number;
-  optional: boolean;
+  unit: string;
+  category: string;
+  checked: boolean;
 }
 
-export interface MealPlan {
-  id: string;
-  userId: string;
-  date: string; // YYYY-MM-DD
-  recipeId: string;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-}
-
-export interface UserFavorite {
-  id: string;
-  userId: string;
-  recipeId: string;
-  addedAt: any;
+export interface DashboardStats {
+  recipes: number;
+  favorites: number;
+  plannedMeals: number;
+  groceryItems: number;
 }

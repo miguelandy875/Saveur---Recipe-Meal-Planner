@@ -16,7 +16,7 @@ import {
   Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Recipe, Category } from '../types';
 import { getCategories, getFilteredRecipes } from '../services/recipeService';
 
@@ -25,13 +25,14 @@ const getCategoryIcon = (name: string) => {
   if (n.includes('petit') || n.includes('breakfast')) return <Coffee size={20} />;
   if (n.includes('plat') || n.includes('main') || n.includes('dinner')) return <UtensilsCrossed size={20} />;
   if (n.includes('dessert') || n.includes('sweet')) return <Dessert size={20} />;
-  if (n.includes('entrée') || n.includes('starter') || n.includes('salad')) return <Salad size={20} />;
-  if (n.includes('snack') || n.includes('goûter')) return <Apple size={20} />;
+  if (n.includes('starter') || n.includes('salad') || n.includes('salade')) return <Salad size={20} />;
+  if (n.includes('snack') || n.includes('gouter')) return <Apple size={20} />;
   if (n.includes('pizza') || n.includes('fast')) return <Pizza size={20} />;
   return <Zap size={20} />; // Default icon
 };
 
 export const Catalog: React.FC = () => {
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -48,6 +49,14 @@ export const Catalog: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
   const COLLECTION_LIMIT = 3;
+
+  useEffect(() => {
+    const state = location.state as { categoryId?: string } | null;
+    if (state?.categoryId) {
+      setSelectedCategory(state.categoryId);
+      fetchCategoryRecipes(state.categoryId);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     getCategories().then(cats => {
@@ -146,8 +155,8 @@ export const Catalog: React.FC = () => {
   return (
     <div className="space-y-6 px-1">
       <header>
-        <h1 className="text-3xl font-serif">Explore Catalogue</h1>
-        <p className="text-gray-500 text-sm mt-1">Discover over 500 delicious recipes</p>
+        <h1 className="text-3xl font-serif">Recipe Catalog</h1>
+        <p className="text-gray-500 text-sm mt-1">Filter recipes by category, time and difficulty</p>
       </header>
 
       <div className="relative">
@@ -296,8 +305,8 @@ export const Catalog: React.FC = () => {
         <div className="flex justify-between items-center px-2">
           <h3 className="font-serif text-xl">
             {isFiltering ? 'Search Results' : 'All Recipes'}
-            {selectedDifficulty ? ` • Level ${selectedDifficulty}` : ''}
-            {selectedCategory && isFiltering ? ` • ${categories.find(c => c.id === selectedCategory)?.name}` : ''}
+            {selectedDifficulty ? ` - Level ${selectedDifficulty}` : ''}
+            {selectedCategory && isFiltering ? ` - ${categories.find(c => c.id === selectedCategory)?.name}` : ''}
           </h3>
           {isFiltering && (
             <button onClick={clearFilters} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Clear</button>

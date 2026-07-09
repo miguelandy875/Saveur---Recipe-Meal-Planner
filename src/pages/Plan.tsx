@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Plus, ChefHat, Clock, X, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { getMealPlanForDate, addToMealPlan } from '../services/mealPlanService';
 import { getFeaturedRecipes, getUserRecipes } from '../services/recipeService';
@@ -33,15 +34,7 @@ export const Plan: React.FC = () => {
     setLoading(true);
     try {
       const dateStr = getDayDate(selectedDay);
-      let entries = [];
-      
-      if (user) {
-        entries = await getMealPlanForDate(user.uid, dateStr);
-      } else {
-        // Guest mode: load from localStorage
-        const localData = localStorage.getItem(`mealPlan_${dateStr}`);
-        entries = localData ? JSON.parse(localData) : [];
-      }
+      const entries = user ? await getMealPlanForDate(user.uid, dateStr) : [];
       
       const mealMap: any = {
         breakfast: null,
@@ -97,28 +90,9 @@ export const Plan: React.FC = () => {
     if (!selectingMealType) return;
     
     const dateStr = getDayDate(selectedDay);
-    const selectedRecipe = availableRecipes.find(r => r.id === recipeId);
 
     if (user) {
       await addToMealPlan(user.uid, dateStr, recipeId, selectingMealType);
-    } else {
-      // Guest mode: Save to local storage
-      const localData = localStorage.getItem(`mealPlan_${dateStr}`);
-      const entries = localData ? JSON.parse(localData) : [];
-      
-      const newEntry = {
-        id: `local_${Date.now()}`,
-        date: dateStr,
-        recipeId: recipeId,
-        mealType: selectingMealType,
-        title: selectedRecipe?.title,
-        time: `${(selectedRecipe?.prepTime || 0) + (selectedRecipe?.cookTime || 0)} min`,
-        img: selectedRecipe?.imageUrl
-      };
-
-      // Replace existing of same type
-      const filtered = entries.filter((e: any) => e.mealType !== selectingMealType);
-      localStorage.setItem(`mealPlan_${dateStr}`, JSON.stringify([...filtered, newEntry]));
     }
     
     setIsPickerOpen(false);
@@ -128,6 +102,21 @@ export const Plan: React.FC = () => {
   const filteredRecipes = availableRecipes.filter(r => 
     r.title.toLowerCase().includes(pickerSearch.toLowerCase())
   );
+
+  if (!user) {
+    return (
+      <div className="max-w-xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
+        <ChefHat size={42} className="mx-auto text-brand-olive" />
+        <h1 className="text-3xl font-serif">Sign in to plan meals</h1>
+        <p className="text-sm text-gray-500">
+          Meal plans belong to each authenticated user, which matches the project requirements.
+        </p>
+        <Link to="/profile" className="btn-olive inline-flex items-center justify-center h-12 px-6">
+          Go to account
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20">

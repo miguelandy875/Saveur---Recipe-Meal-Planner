@@ -1,94 +1,55 @@
-import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
-import { Recipe } from '../types';
+import { MealPlanEntry, MealType } from '../types';
+import { apiFetch } from './api';
 
-export interface MealPlanEntry {
-  id?: string;
-  userId: string;
-  date: string; // YYYY-MM-DD
-  recipeId: string;
-  mealType: string; // breakfast, lunch, dinner, snack
+interface ListResponse<T> {
+  data: T[];
 }
 
-export const getMealPlanForDate = async (userId: string, date: string) => {
-  const path = 'mealPlans';
-  try {
-    const q = query(collection(db, path), where('userId', '==', userId), where('date', '==', date));
-    const snapshot = await getDocs(q);
-    
-    // We also want to fetch the recipe details for each entry
-    const entries = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MealPlanEntry));
-    
-    const entriesWithRecipes = await Promise.all(entries.map(async (entry) => {
-      try {
-        const recipeDocRef = doc(db, 'recipes', entry.recipeId);
-        const recipeSnap = await getDoc(recipeDocRef);
-        const recipeData = recipeSnap.exists() ? recipeSnap.data() as Recipe : null;
-        
-        return {
-          ...entry,
-          recipe: recipeData ? { ...recipeData, id: recipeSnap.id } : null
-        };
-      } catch (e) {
-        console.error('Error fetching recipe for meal plan:', e);
-        return { ...entry, recipe: null };
-      }
-    }));
+interface ItemResponse<T> {
+  data: T;
+}
 
-    return entriesWithRecipes;
+export const getMealPlanForDate = async (_userId: string, date: string) => {
+  try {
+    const response = await apiFetch<ListResponse<MealPlanEntry>>(`/meal-plans?date=${encodeURIComponent(date)}`);
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error(error);
     return [];
   }
 };
 
-export const addToMealPlan = async (userId: string, date: string, recipeId: string, mealType: string) => {
-  const path = 'mealPlans';
+export const getMealPlanForRange = async (start: string, end: string) => {
   try {
-    // Check if entry already exists for this type/date/user
-    const q = query(
-      collection(db, path), 
-      where('userId', '==', userId), 
-      where('date', '==', date),
-      where('mealType', '==', mealType)
+    const response = await apiFetch<ListResponse<MealPlanEntry>>(
+      `/meal-plans?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
     );
-    const existing = await getDocs(q);
-    
-    if (!existing.empty) {
-      // Update existing
-      const entryId = existing.docs[0].id;
-      await setDoc(doc(db, path, entryId), {
-        userId,
-        date,
-        recipeId,
-        mealType,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-      return entryId;
-    } else {
-      // Add new
-      const docRef = await addDoc(collection(db, path), {
-        userId,
-        date,
-        recipeId,
-        mealType,
-        createdAt: serverTimestamp()
-      });
-      return docRef.id;
-    }
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.error(error);
+    return [];
+  }
+};
+
+export const addToMealPlan = async (_userId: string, date: string, recipeId: string, mealType: string) => {
+  try {
+    const response = await apiFetch<ItemResponse<MealPlanEntry>>('/meal-plans', {
+      method: 'POST',
+      body: JSON.stringify({ date, recipeId, mealType: mealType as MealType }),
+    });
+    return response.data.id;
+  } catch (error) {
+    console.error(error);
     return null;
   }
 };
 
 export const removeFromMealPlan = async (entryId: string) => {
-  const path = `mealPlans/${entryId}`;
   try {
-    await deleteDoc(doc(db, 'mealPlans', entryId));
+    await apiFetch<void>(`/meal-plans/${entryId}`, { method: 'DELETE' });
     return true;
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+    console.error(error);
     return false;
   }
 };

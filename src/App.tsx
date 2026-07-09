@@ -8,7 +8,6 @@ import { Groceries } from './pages/Groceries';
 import { Profile } from './pages/Profile';
 import { RecipeDetail } from './pages/RecipeDetail';
 import { CreateRecipe } from './pages/CreateRecipe';
-import { DebugTests } from './pages/DebugTests';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -32,7 +31,7 @@ function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/recipe/:id" element={<RecipeDetail />} />
           <Route path="/create-recipe" element={<CreateRecipe />} />
-          <Route path="/debug" element={<DebugTests />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </Router>

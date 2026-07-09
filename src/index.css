@@ -24,12 +24,8 @@
   @apply min-h-screen bg-brand-cream text-gray-900 relative flex flex-col;
 }
 
-.bottom-nav {
-  @apply fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 flex justify-around items-center py-3.5 z-50 md:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.04)];
-}
-
 .card-rounded {
-  @apply rounded-[32px] overflow-hidden;
+  @apply rounded-2xl overflow-hidden;
 }
 
 .btn-olive {

@@ -1,129 +1,122 @@
-import { collection, query, where, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
-import { Recipe, Category, RecipeStep, RecipeIngredient } from '../types';
+import { Category, Ingredient, Recipe, RecipeIngredient, RecipeStep } from '../types';
+import { apiFetch } from './api';
+
+interface ListResponse<T> {
+  data: T[];
+}
+
+interface ItemResponse<T> {
+  data: T;
+}
 
 export const getFeaturedRecipes = async (limitCount = 5) => {
-  const path = 'recipes';
   try {
-    const q = query(collection(db, path), where('isPublic', '==', true), limit(limitCount));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
+    const response = await apiFetch<ListResponse<Recipe>>('/recipes');
+    return response.data.slice(0, limitCount);
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error(error);
     return [];
   }
 };
 
 export const getCategories = async () => {
-  const path = 'categories';
   try {
-    const snapshot = await getDocs(collection(db, path));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    const response = await apiFetch<ListResponse<Category>>('/categories');
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error(error);
+    return [];
+  }
+};
+
+export const getIngredients = async (search = '') => {
+  try {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const response = await apiFetch<ListResponse<Ingredient>>(`/ingredients${query}`);
+    return response.data;
+  } catch (error) {
+    console.error(error);
     return [];
   }
 };
 
 export const getRecipeById = async (id: string) => {
-  const path = `recipes/${id}`;
   try {
-    const docRef = doc(db, 'recipes', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Recipe;
-    }
-    return null;
+    const response = await apiFetch<ItemResponse<Recipe>>(`/recipes/${id}`);
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
+    console.error(error);
     return null;
   }
 };
 
-export const getFilteredRecipes = async (filters: { categoryId?: string, difficulty?: number, maxTime?: number }) => {
-  const path = 'recipes';
+export const getFilteredRecipes = async (filters: {
+  categoryId?: string;
+  difficulty?: number;
+  maxTime?: number;
+  search?: string;
+}) => {
   try {
-    let q = query(collection(db, path), where('isPublic', '==', true));
-    
-    if (filters.categoryId) {
-      q = query(q, where('categoryId', '==', filters.categoryId));
-    }
-    
-    if (filters.difficulty) {
-      q = query(q, where('difficulty', '==', filters.difficulty));
-    }
+    const params = new URLSearchParams();
+    if (filters.categoryId) params.set('categoryId', filters.categoryId);
+    if (filters.difficulty) params.set('difficulty', String(filters.difficulty));
+    if (filters.maxTime) params.set('maxTime', String(filters.maxTime));
+    if (filters.search) params.set('search', filters.search);
 
-    const snapshot = await getDocs(q);
-    let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
-
-    // Client-side filter for time if needed (Firestore inequalities on different fields are tricky)
-    if (filters.maxTime) {
-      results = results.filter(r => (r.prepTime + r.cookTime) <= filters.maxTime!);
-    }
-
-    return results;
+    const query = params.toString() ? `?${params}` : '';
+    const response = await apiFetch<ListResponse<Recipe>>(`/recipes${query}`);
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error(error);
     return [];
   }
 };
 
 export const createRecipe = async (
-  recipeData: Omit<Recipe, 'id' | 'createdAt'>, 
-  steps: Omit<RecipeStep, 'id'>[], 
+  recipeData: Omit<Recipe, 'id' | 'createdAt' | 'ingredients' | 'steps' | 'isFavorite'>,
+  steps: Omit<RecipeStep, 'id'>[],
   ingredients: Omit<RecipeIngredient, 'id'>[]
 ) => {
-  const path = 'recipes';
   try {
-    // 1. Create the main recipe document
-    const recipeRef = await addDoc(collection(db, path), {
-      ...recipeData,
-      createdAt: serverTimestamp()
+    const response = await apiFetch<ItemResponse<Recipe>>('/recipes', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...recipeData,
+        steps,
+        ingredients,
+      }),
     });
 
-    // 2. Add steps to sub-collection
-    const stepsPath = `${path}/${recipeRef.id}/steps`;
-    for (const step of steps) {
-      await addDoc(collection(db, stepsPath), step);
-    }
-
-    // 3. Add ingredients to sub-collection
-    const ingPath = `${path}/${recipeRef.id}/ingredients`;
-    for (const ing of ingredients) {
-      await addDoc(collection(db, ingPath), ing);
-    }
-
-    return recipeRef.id;
+    return response.data.id;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-    return null;
+    console.error(error);
+    throw error;
   }
 };
 
-export const getUserRecipes = async (userId: string) => {
-  const path = 'recipes';
+export const getUserRecipes = async (_userId?: string) => {
   try {
-    const q = query(collection(db, path), where('userId', '==', userId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
+    const response = await apiFetch<ListResponse<Recipe>>('/recipes/mine');
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error(error);
     return [];
   }
 };
 
-export const toggleFavorite = async (userId: string, recipeId: string, isFavorite: boolean) => {
-  const path = `users/${userId}/favorites`;
+export const getFavoriteRecipes = async () => {
   try {
-    if (isFavorite) {
-      await addDoc(collection(db, path), { recipeId, createdAt: serverTimestamp() });
-    } else {
-      const q = query(collection(db, path), where('recipeId', '==', recipeId));
-      const snap = await getDocs(q);
-      const deletePromises = snap.docs.map(d => deleteDoc(doc(db, path, d.id)));
-      await Promise.all(deletePromises);
-    }
+    const response = await apiFetch<ListResponse<Recipe>>('/favorites');
+    return response.data;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.error(error);
+    return [];
   }
+};
+
+export const toggleFavorite = async (_userId: string, recipeId: string) => {
+  const response = await apiFetch<{ isFavorite: boolean }>(`/favorites/${recipeId}/toggle`, {
+    method: 'POST',
+  });
+  return response.isFavorite;
 };
