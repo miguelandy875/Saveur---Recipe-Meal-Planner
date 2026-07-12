@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Camera, ChefHat, ChevronLeft, Clock, ImagePlus, Info, Link as LinkIcon, Plus, Trash2, Upload, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../services/AuthContext';
-import { createRecipe, getCategories, uploadRecipeImage } from '../services/recipeService';
+import { createRecipe, getCategories, getRecipeById, updateRecipe, uploadRecipeImage } from '../services/recipeService';
 import { useI18n } from '../services/i18n';
 import { Category, RecipeIngredient, RecipeStep } from '../types';
 
@@ -15,14 +15,17 @@ const emptyIngredient = (): Omit<RecipeIngredient, 'id'> => ({
 });
 
 export const CreateRecipe: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t, categoryLabel } = useI18n();
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const isEditing = Boolean(id);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,6 +48,59 @@ export const CreateRecipe: React.FC = () => {
   useEffect(() => {
     getCategories().then(setCategories);
   }, []);
+
+  useEffect(() => {
+    if (!id || !user) return;
+
+    setLoadingRecipe(true);
+    setError('');
+    getRecipeById(id)
+      .then((recipe) => {
+        if (!recipe) {
+          setError(t('recipe.notFound'));
+          return;
+        }
+
+        if (recipe.userId !== user.uid && user.role !== 'admin') {
+          setError(t('create.editForbidden'));
+          return;
+        }
+
+        setTitle(recipe.title);
+        setDescription(recipe.description);
+        setCategoryId(recipe.categoryId);
+        setCuisine(recipe.cuisine || 'International');
+        setImageUrl(recipe.imageUrl || '');
+        setPrepTime(recipe.prepTime);
+        setCookTime(recipe.cookTime);
+        setDifficulty(recipe.difficulty);
+        setServings(recipe.servings);
+        setIsPublic(recipe.isPublic);
+        setSteps(
+          recipe.steps?.length
+            ? recipe.steps.map((step, index) => ({
+                order: Number(step.order) || index + 1,
+                title: step.title || '',
+                description: step.description,
+              }))
+            : [{ order: 1, title: '', description: '' }]
+        );
+        setIngredients(
+          recipe.ingredients?.length
+            ? recipe.ingredients.map((ingredient) => ({
+                ingredientId: ingredient.ingredientId,
+                name: ingredient.name,
+                quantity: ingredient.quantity,
+                unit: ingredient.unit,
+                optional: Boolean(ingredient.optional),
+                category: ingredient.category,
+              }))
+            : [emptyIngredient()]
+        );
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load the recipe.'))
+      .finally(() => setLoadingRecipe(false));
+  }, [id, user, t]);
 
   const addStep = () => {
     setSteps([...steps, { order: steps.length + 1, title: '', description: '' }]);
@@ -90,30 +146,32 @@ export const CreateRecipe: React.FC = () => {
     setError('');
 
     try {
-      const recipeId = await createRecipe(
-        {
-          title,
-          description,
-          prepTime: Math.max(0, Number(prepTime) || 0),
-          cookTime: Math.max(0, Number(cookTime) || 0),
-          difficulty: Math.min(5, Math.max(1, Number(difficulty) || 1)),
-          servings: Math.max(1, Number(servings) || 1),
-          categoryId,
-          cuisine,
-          userId: user.uid,
-          imageUrl,
-          isPublic,
-        },
-        steps.filter((step) => step.description.trim() !== ''),
-        ingredients
-          .map((ingredient) => ({
-            ...ingredient,
-            name: ingredient.name.trim(),
-            unit: ingredient.unit.trim() || 'unit',
-            quantity: Math.max(0, Number(ingredient.quantity) || 0),
-          }))
-          .filter((ingredient) => ingredient.name !== '')
-      );
+      const recipePayload = {
+        title,
+        description,
+        prepTime: Math.max(0, Number(prepTime) || 0),
+        cookTime: Math.max(0, Number(cookTime) || 0),
+        difficulty: Math.min(5, Math.max(1, Number(difficulty) || 1)),
+        servings: Math.max(1, Number(servings) || 1),
+        categoryId,
+        cuisine,
+        userId: user.uid,
+        imageUrl,
+        isPublic,
+      };
+      const preparedSteps = steps.filter((step) => step.description.trim() !== '');
+      const preparedIngredients = ingredients
+        .map((ingredient) => ({
+          ...ingredient,
+          name: ingredient.name.trim(),
+          unit: ingredient.unit.trim() || 'unit',
+          quantity: Math.max(0, Number(ingredient.quantity) || 0),
+        }))
+        .filter((ingredient) => ingredient.name !== '');
+
+      const recipeId = isEditing && id
+        ? await updateRecipe(id, recipePayload, preparedSteps, preparedIngredients)
+        : await createRecipe(recipePayload, preparedSteps, preparedIngredients);
 
       navigate(`/recipe/${recipeId}`);
     } catch (err) {
@@ -143,10 +201,16 @@ export const CreateRecipe: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h1 className="text-3xl font-serif">{t('create.title')}</h1>
-          <p className="text-sm text-gray-500">{t('create.subtitle')}</p>
+          <h1 className="text-3xl font-serif">{isEditing ? t('create.editTitle') : t('create.title')}</h1>
+          <p className="text-sm text-gray-500">{isEditing ? t('create.editSubtitle') : t('create.subtitle')}</p>
         </div>
       </header>
+
+      {loadingRecipe && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 text-sm text-gray-500">
+          {t('common.loading')}...
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_360px] gap-8 items-start">
         <div className="space-y-8">
@@ -446,10 +510,10 @@ export const CreateRecipe: React.FC = () => {
           <motion.button
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={loading || !categoryId}
+            disabled={loading || loadingRecipe || !categoryId}
             className="w-full btn-olive py-5 shadow-xl shadow-brand-olive/20 disabled:opacity-50"
           >
-            {loading ? t('create.saving') : t('create.saveRecipe')}
+            {loading ? t('create.saving') : isEditing ? t('create.updateRecipe') : t('create.saveRecipe')}
           </motion.button>
         </aside>
       </form>

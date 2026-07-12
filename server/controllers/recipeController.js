@@ -225,6 +225,81 @@ export async function createRecipe(req, res, next) {
   }
 }
 
+export async function updateRecipe(req, res, next) {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found.' });
+    }
+
+    const ownsRecipe = recipe.user.toString() === req.user._id.toString();
+    if (!ownsRecipe && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You can edit only your own recipes.' });
+    }
+
+    const {
+      title,
+      description,
+      prepTime,
+      cookTime,
+      difficulty,
+      servings,
+      categoryId,
+      cuisine,
+      imageUrl,
+      isPublic,
+      steps,
+      ingredients,
+    } = req.body;
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(400).json({ message: 'Please select a valid recipe category.' });
+    }
+
+    const normalizedSteps = (steps || [])
+      .filter((step) => step.description?.trim())
+      .map((step, index) => ({
+        order: Number(step.order) || index + 1,
+        title: step.title || '',
+        description: step.description.trim(),
+      }));
+
+    const normalizedIngredients = await normalizeIngredients(ingredients);
+
+    if (normalizedSteps.length === 0 || normalizedIngredients.length === 0) {
+      return res.status(400).json({ message: 'At least one ingredient and one preparation step are required.' });
+    }
+
+    recipe.set({
+      title,
+      description,
+      prepTime: Number(prepTime),
+      cookTime: Number(cookTime),
+      difficulty: Number(difficulty),
+      servings: Number(servings),
+      category: category._id,
+      cuisine: cuisine || 'International',
+      imageUrl,
+      isPublic: isPublic !== false,
+      ingredients: normalizedIngredients,
+      steps: normalizedSteps,
+    });
+
+    await recipe.save();
+
+    const populated = await Recipe.findById(recipe._id)
+      .populate('category', 'name slug image')
+      .populate('user', 'name');
+
+    const favorites = await favoriteIdSet(req.user?._id, [recipe._id]);
+    res.json({ data: serializeRecipe(populated, favorites) });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteRecipe(req, res, next) {
   try {
     const recipe = await Recipe.findById(req.params.id);

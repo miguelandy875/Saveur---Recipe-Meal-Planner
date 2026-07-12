@@ -31,6 +31,7 @@ function AppRoutes() {
           <Route path="/groceries" element={<Groceries />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/recipe/:id" element={<RecipeDetail />} />
+          <Route path="/recipe/:id/edit" element={<CreateRecipe />} />
           <Route path="/create-recipe" element={<CreateRecipe />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

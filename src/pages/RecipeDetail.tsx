@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChefHat, ChevronLeft, ChevronRight, Clock, Heart, Trash2, Users, X } from 'lucide-react';
+import { ChefHat, ChevronLeft, ChevronRight, Clock, Heart, Pencil, Trash2, Users, X } from 'lucide-react';
 import { deleteRecipe, getRecipeById, toggleFavorite } from '../services/recipeService';
 import { useAuth } from '../services/AuthContext';
 import { useI18n } from '../services/i18n';
@@ -80,7 +80,7 @@ export const RecipeDetail: React.FC = () => {
   const recipeSteps = recipe.steps || [];
   const categoryName = categoryLabel({ name: recipe.categoryName || 'Recipe', slug: recipe.categorySlug });
   const activeStep = recipeSteps[activeCookingStep];
-  const canDeleteRecipe = Boolean(user && (recipe.userId === user.uid || user.role === 'admin'));
+  const canManageRecipe = Boolean(user && (recipe.userId === user.uid || user.role === 'admin'));
 
   return (
     <div className="space-y-8 pb-12">
@@ -101,16 +101,26 @@ export const RecipeDetail: React.FC = () => {
             <ChevronLeft size={24} />
           </button>
           <div className="flex items-center gap-3">
-            {canDeleteRecipe && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="w-12 h-12 rounded-xl bg-red-500/80 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 disabled:opacity-60"
-                aria-label={t('recipe.delete')}
-              >
-                <Trash2 size={20} />
-              </button>
+            {canManageRecipe && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/recipe/${recipe.id}/edit`)}
+                  className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30"
+                  aria-label={t('recipe.edit')}
+                >
+                  <Pencil size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="w-12 h-12 rounded-xl bg-red-500/80 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 disabled:opacity-60"
+                  aria-label={t('recipe.delete')}
+                >
+                  <Trash2 size={20} />
+                </button>
+              </>
             )}
             <button
               onClick={handleFavorite}

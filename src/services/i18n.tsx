@@ -80,7 +80,10 @@ type TranslationKey =
   | 'create.signInText'
   | 'create.goToAccount'
   | 'create.title'
+  | 'create.editTitle'
   | 'create.subtitle'
+  | 'create.editSubtitle'
+  | 'create.editForbidden'
   | 'create.imageHelp'
   | 'create.uploadPhoto'
   | 'create.takePhoto'
@@ -108,6 +111,7 @@ type TranslationKey =
   | 'create.visiblePublic'
   | 'create.saving'
   | 'create.saveRecipe'
+  | 'create.updateRecipe'
   | 'create.uploading'
   | 'recipe.notFound'
   | 'recipe.notFoundText'
@@ -119,6 +123,7 @@ type TranslationKey =
   | 'recipe.stepCount'
   | 'recipe.noSteps'
   | 'recipe.finishCooking'
+  | 'recipe.edit'
   | 'recipe.delete'
   | 'recipe.deleteConfirm'
   | 'recipe.deleteError'
@@ -286,7 +291,10 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.signInText': 'Authenticated users can create recipes, favorites and meal plans.',
     'create.goToAccount': 'Go to account',
     'create.title': 'Create Recipe',
+    'create.editTitle': 'Edit Recipe',
     'create.subtitle': 'Save ingredients, quantities, units and preparation steps.',
+    'create.editSubtitle': 'Update ingredients, quantities, units and preparation steps.',
+    'create.editForbidden': 'You can edit only your own recipes.',
     'create.imageHelp': 'Upload, take a photo, or paste an image URL.',
     'create.uploadPhoto': 'Upload photo',
     'create.takePhoto': 'Take photo',
@@ -314,6 +322,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.visiblePublic': 'Visible in the public catalog',
     'create.saving': 'Saving recipe...',
     'create.saveRecipe': 'Save Recipe',
+    'create.updateRecipe': 'Update Recipe',
     'create.uploading': 'Uploading photo...',
     'recipe.notFound': 'Recipe not found',
     'recipe.notFoundText': 'It may have been deleted or made private.',
@@ -325,6 +334,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Step {current} of {total}',
     'recipe.noSteps': 'No preparation steps have been added yet.',
     'recipe.finishCooking': 'Finish cooking',
+    'recipe.edit': 'Edit recipe',
     'recipe.delete': 'Delete recipe',
     'recipe.deleteConfirm': 'Delete this recipe? This action cannot be undone.',
     'recipe.deleteError': 'The recipe could not be deleted. Please try again.',
@@ -489,7 +499,10 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.signInText': 'Les utilisateurs connectés peuvent créer des recettes, favoris et plans.',
     'create.goToAccount': 'Aller au compte',
     'create.title': 'Créer une recette',
+    'create.editTitle': 'Modifier la recette',
     'create.subtitle': 'Enregistrez ingrédients, quantités, unités et étapes.',
+    'create.editSubtitle': 'Mettez à jour les ingrédients, quantités, unités et étapes.',
+    'create.editForbidden': 'Vous ne pouvez modifier que vos propres recettes.',
     'create.imageHelp': 'Téléversez, prenez une photo ou collez une URL.',
     'create.uploadPhoto': 'Téléverser',
     'create.takePhoto': 'Prendre photo',
@@ -517,6 +530,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.visiblePublic': 'Visible dans le catalogue public',
     'create.saving': 'Enregistrement...',
     'create.saveRecipe': 'Enregistrer',
+    'create.updateRecipe': 'Mettre à jour',
     'create.uploading': 'Téléversement...',
     'recipe.notFound': 'Recette introuvable',
     'recipe.notFoundText': 'Elle a peut-être été supprimée ou rendue privée.',
@@ -528,6 +542,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Étape {current} sur {total}',
     'recipe.noSteps': 'Aucune étape de préparation n’a encore été ajoutée.',
     'recipe.finishCooking': 'Terminer',
+    'recipe.edit': 'Modifier la recette',
     'recipe.delete': 'Supprimer la recette',
     'recipe.deleteConfirm': 'Supprimer cette recette ? Cette action est définitive.',
     'recipe.deleteError': 'La recette n’a pas pu être supprimée. Veuillez réessayer.',
@@ -692,7 +707,10 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.signInText': 'Los usuarios conectados pueden crear recetas, favoritos y planes.',
     'create.goToAccount': 'Ir a cuenta',
     'create.title': 'Crear receta',
+    'create.editTitle': 'Editar receta',
     'create.subtitle': 'Guarda ingredientes, cantidades, unidades y pasos.',
+    'create.editSubtitle': 'Actualiza ingredientes, cantidades, unidades y pasos.',
+    'create.editForbidden': 'Solo puedes editar tus propias recetas.',
     'create.imageHelp': 'Sube, toma una foto o pega una URL.',
     'create.uploadPhoto': 'Subir foto',
     'create.takePhoto': 'Tomar foto',
@@ -720,6 +738,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.visiblePublic': 'Visible en el catálogo público',
     'create.saving': 'Guardando...',
     'create.saveRecipe': 'Guardar receta',
+    'create.updateRecipe': 'Actualizar receta',
     'create.uploading': 'Subiendo foto...',
     'recipe.notFound': 'Receta no encontrada',
     'recipe.notFoundText': 'Puede haber sido eliminada o puesta privada.',
@@ -731,6 +750,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Paso {current} de {total}',
     'recipe.noSteps': 'Todavía no se añadieron pasos de preparación.',
     'recipe.finishCooking': 'Terminar',
+    'recipe.edit': 'Editar receta',
     'recipe.delete': 'Eliminar receta',
     'recipe.deleteConfirm': '¿Eliminar esta receta? Esta acción no se puede deshacer.',
     'recipe.deleteError': 'No se pudo eliminar la receta. Inténtalo de nuevo.',
@@ -895,7 +915,10 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.signInText': 'Gli utenti autenticati possono creare ricette, preferiti e piani.',
     'create.goToAccount': 'Vai all’account',
     'create.title': 'Crea ricetta',
+    'create.editTitle': 'Modifica ricetta',
     'create.subtitle': 'Salva ingredienti, quantità, unità e passaggi.',
+    'create.editSubtitle': 'Aggiorna ingredienti, quantità, unità e passaggi.',
+    'create.editForbidden': 'Puoi modificare solo le tue ricette.',
     'create.imageHelp': 'Carica, scatta una foto o incolla un URL.',
     'create.uploadPhoto': 'Carica foto',
     'create.takePhoto': 'Scatta foto',
@@ -923,6 +946,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'create.visiblePublic': 'Visibile nel catalogo pubblico',
     'create.saving': 'Salvataggio...',
     'create.saveRecipe': 'Salva ricetta',
+    'create.updateRecipe': 'Aggiorna ricetta',
     'create.uploading': 'Caricamento foto...',
     'recipe.notFound': 'Ricetta non trovata',
     'recipe.notFoundText': 'Potrebbe essere stata eliminata o resa privata.',
@@ -934,6 +958,7 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Passo {current} di {total}',
     'recipe.noSteps': 'Non sono ancora stati aggiunti passaggi.',
     'recipe.finishCooking': 'Termina',
+    'recipe.edit': 'Modifica ricetta',
     'recipe.delete': 'Elimina ricetta',
     'recipe.deleteConfirm': 'Eliminare questa ricetta? Questa azione non può essere annullata.',
     'recipe.deleteError': 'Impossibile eliminare la ricetta. Riprova.',

@@ -98,6 +98,29 @@ export const createRecipe = async (
   }
 };
 
+export const updateRecipe = async (
+  recipeId: string,
+  recipeData: Omit<Recipe, 'id' | 'createdAt' | 'ingredients' | 'steps' | 'isFavorite'>,
+  steps: Omit<RecipeStep, 'id'>[],
+  ingredients: Omit<RecipeIngredient, 'id'>[]
+) => {
+  try {
+    const response = await apiFetch<ItemResponse<Recipe>>(`/recipes/${recipeId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...recipeData,
+        steps,
+        ingredients,
+      }),
+    });
+
+    return response.data.id;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
 export const uploadRecipeImage = async (file: File) => {
   const body = new FormData();
   body.append('photo', file);
