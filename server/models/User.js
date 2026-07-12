@@ -25,6 +25,15 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    photoURL: {
+      type: String,
+      default: '',
+    },
+    preferredLanguage: {
+      type: String,
+      enum: ['en', 'fr', 'es', 'it'],
+      default: 'en',
+    },
   },
   { timestamps: true }
 );

@@ -1,14 +1,18 @@
+export type LanguageCode = 'en' | 'fr' | 'es' | 'it';
+
 export interface AuthUser {
   uid: string;
   displayName: string;
   email: string;
   role: 'user' | 'admin';
   photoURL?: string;
+  preferredLanguage?: LanguageCode;
 }
 
 export interface Category {
   id: string;
   name: string;
+  slug?: string;
   image?: string;
 }
 
@@ -47,6 +51,8 @@ export interface Recipe {
   servings: number;
   categoryId: string;
   categoryName?: string;
+  categorySlug?: string;
+  cuisine?: string;
   userId: string;
   userName?: string;
   imageUrl?: string;
@@ -58,6 +64,17 @@ export interface Recipe {
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+export type ShoppingCategory =
+  | 'DAIRY'
+  | 'PRODUCE'
+  | 'PASTA_GRAINS'
+  | 'PANTRY'
+  | 'MEAT_PROTEIN'
+  | 'BAKERY'
+  | 'FROZEN'
+  | 'BEVERAGES'
+  | 'OTHER';
 
 export interface MealPlanEntry {
   id: string;
@@ -73,8 +90,9 @@ export interface GroceryItem {
   name: string;
   quantity: number;
   unit: string;
-  category: string;
+  category: ShoppingCategory;
   checked: boolean;
+  source?: 'generated' | 'custom';
 }
 
 export interface DashboardStats {

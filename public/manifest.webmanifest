@@ -1,0 +1,19 @@
+{
+  "name": "Saveur Recipe Meal Planner",
+  "short_name": "Saveur",
+  "description": "Recipe catalog, meal planner, favorites and smart grocery lists.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f0",
+  "theme_color": "#5A5A40",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/saveur-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

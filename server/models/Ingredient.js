@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { SHOPPING_CATEGORY_ORDER, SHOPPING_CATEGORIES } from '../utils/shoppingCategories.js';
 
 const ingredientSchema = new mongoose.Schema(
   {
@@ -17,7 +18,8 @@ const ingredientSchema = new mongoose.Schema(
     category: {
       type: String,
       trim: true,
-      default: 'Other',
+      enum: SHOPPING_CATEGORY_ORDER,
+      default: SHOPPING_CATEGORIES.OTHER,
     },
     caloriesPerUnit: {
       type: Number,

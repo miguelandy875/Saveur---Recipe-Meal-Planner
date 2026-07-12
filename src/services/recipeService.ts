@@ -9,6 +9,10 @@ interface ItemResponse<T> {
   data: T;
 }
 
+interface UploadResponse {
+  url: string;
+}
+
 export const getFeaturedRecipes = async (limitCount = 5) => {
   try {
     const response = await apiFetch<ListResponse<Recipe>>('/recipes');
@@ -92,6 +96,18 @@ export const createRecipe = async (
     console.error(error);
     throw error;
   }
+};
+
+export const uploadRecipeImage = async (file: File) => {
+  const body = new FormData();
+  body.append('photo', file);
+
+  const response = await apiFetch<UploadResponse>('/uploads/recipe-image', {
+    method: 'POST',
+    body,
+  });
+
+  return response.url;
 };
 
 export const getUserRecipes = async (_userId?: string) => {

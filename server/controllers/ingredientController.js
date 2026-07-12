@@ -1,4 +1,5 @@
 import { Ingredient } from '../models/Ingredient.js';
+import { suggestShoppingCategory } from '../utils/shoppingCategories.js';
 
 export async function listIngredients(req, res, next) {
   try {
@@ -11,7 +12,7 @@ export async function listIngredients(req, res, next) {
         id: ingredient._id.toString(),
         name: ingredient.name,
         unit: ingredient.defaultUnit,
-        category: ingredient.category,
+        category: suggestShoppingCategory(ingredient.name, ingredient.category),
         caloriesPerUnit: ingredient.caloriesPerUnit,
       })),
     });

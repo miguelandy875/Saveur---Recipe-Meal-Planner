@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Camera, ChefHat, ChevronLeft, Clock, Info, Plus, Trash2, Users } from 'lucide-react';
+import { Camera, ChefHat, ChevronLeft, Clock, ImagePlus, Info, Link as LinkIcon, Plus, Trash2, Upload, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../services/AuthContext';
-import { createRecipe, getCategories } from '../services/recipeService';
+import { createRecipe, getCategories, uploadRecipeImage } from '../services/recipeService';
+import { useI18n } from '../services/i18n';
 import { Category, RecipeIngredient, RecipeStep } from '../types';
 
 const emptyIngredient = (): Omit<RecipeIngredient, 'id'> => ({
@@ -16,14 +17,19 @@ const emptyIngredient = (): Omit<RecipeIngredient, 'id'> => ({
 export const CreateRecipe: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, categoryLabel } = useI18n();
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [cuisine, setCuisine] = useState('International');
   const [imageUrl, setImageUrl] = useState('');
   const [prepTime, setPrepTime] = useState(20);
   const [cookTime, setCookTime] = useState(15);
@@ -60,6 +66,22 @@ export const CreateRecipe: React.FC = () => {
     setIngredients(ingredients.map((ingredient, i) => (i === index ? { ...ingredient, ...patch } : ingredient)));
   };
 
+  const handleImageFile = async (file?: File) => {
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError('');
+
+    try {
+      const uploadedUrl = await uploadRecipeImage(file);
+      setImageUrl(uploadedUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload the image.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user || !categoryId) return;
@@ -77,6 +99,7 @@ export const CreateRecipe: React.FC = () => {
           difficulty: Math.min(5, Math.max(1, Number(difficulty) || 1)),
           servings: Math.max(1, Number(servings) || 1),
           categoryId,
+          cuisine,
           userId: user.uid,
           imageUrl,
           isPublic,
@@ -104,12 +127,10 @@ export const CreateRecipe: React.FC = () => {
     return (
       <div className="max-w-xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
         <ChefHat size={42} className="mx-auto text-brand-olive" />
-        <h1 className="text-3xl font-serif">Sign in to create recipes</h1>
-        <p className="text-sm text-gray-500">
-          The assignment requires authenticated users for personal recipes, favorites and planning.
-        </p>
+        <h1 className="text-3xl font-serif">{t('create.signInTitle')}</h1>
+        <p className="text-sm text-gray-500">{t('create.signInText')}</p>
         <Link to="/profile" className="btn-olive inline-flex items-center justify-center h-12 px-6">
-          Go to account
+          {t('create.goToAccount')}
         </Link>
       </div>
     );
@@ -122,8 +143,8 @@ export const CreateRecipe: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h1 className="text-3xl font-serif">Create Recipe</h1>
-          <p className="text-sm text-gray-500">Save ingredients, quantities, units and preparation steps.</p>
+          <h1 className="text-3xl font-serif">{t('create.title')}</h1>
+          <p className="text-sm text-gray-500">{t('create.subtitle')}</p>
         </div>
       </header>
 
@@ -135,30 +156,88 @@ export const CreateRecipe: React.FC = () => {
                 <img src={imageUrl} className="w-full h-full object-cover" alt="Recipe preview" />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-2">
-                  <Camera size={32} />
-                  <span className="text-xs font-bold uppercase tracking-widest text-center px-4">Paste an image URL to preview</span>
+                  <ImagePlus size={32} />
+                  <span className="text-xs font-bold uppercase tracking-widest text-center px-4">{t('create.imageHelp')}</span>
                 </div>
               )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center text-brand-olive text-xs font-bold uppercase tracking-widest">
+                  {t('create.uploading')}
+                </div>
+              )}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(event) => {
+                  handleImageFile(event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(event) => {
+                  handleImageFile(event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                className="h-12 bg-white border border-gray-100 rounded-xl text-xs font-bold uppercase tracking-widest text-brand-olive flex items-center justify-center gap-2"
+              >
+                <Upload size={16} />
+                {t('create.uploadPhoto')}
+              </button>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="h-12 bg-white border border-gray-100 rounded-xl text-xs font-bold uppercase tracking-widest text-brand-olive flex items-center justify-center gap-2"
+              >
+                <Camera size={16} />
+                {t('create.takePhoto')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageUrl('')}
+                disabled={!imageUrl || uploadingImage}
+                className="h-12 bg-white border border-gray-100 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center justify-center gap-2 disabled:opacity-40"
+              >
+                <X size={16} />
+                {t('create.clearImage')}
+              </button>
             </div>
 
             <div className="grid gap-4">
               <input
                 type="text"
-                placeholder="Recipe title"
+                placeholder={t('create.recipeTitle')}
                 className="w-full bg-white border border-gray-100 rounded-2xl p-4 font-serif text-xl focus:ring-2 focus:ring-brand-olive outline-hidden"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 required
               />
-              <input
-                type="url"
-                placeholder="Image URL"
-                className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-brand-olive outline-hidden"
-                value={imageUrl}
-                onChange={(event) => setImageUrl(event.target.value)}
-              />
+              <div className="relative">
+                <LinkIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <input
+                  type="text"
+                  inputMode="url"
+                  placeholder={t('create.imageUrl')}
+                  className="w-full bg-white border border-gray-100 rounded-2xl py-4 pl-11 pr-4 text-sm focus:ring-2 focus:ring-brand-olive outline-hidden"
+                  value={imageUrl}
+                  onChange={(event) => setImageUrl(event.target.value)}
+                />
+              </div>
               <textarea
-                placeholder="Brief description"
+                placeholder={t('create.description')}
                 className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-sm min-h-[110px] focus:ring-2 focus:ring-brand-olive outline-hidden"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -168,13 +247,13 @@ export const CreateRecipe: React.FC = () => {
           </section>
 
           <section className="space-y-4">
-            <h3 className="font-serif text-xl px-2">Ingredients</h3>
+            <h3 className="font-serif text-xl px-2">{t('create.ingredients')}</h3>
             <div className="space-y-3">
               {ingredients.map((ingredient, index) => (
                 <div key={index} className="grid md:grid-cols-[1fr_100px_100px_44px] gap-2 bg-white p-3 rounded-2xl border border-gray-100">
                   <input
                     type="text"
-                    placeholder="Ingredient name"
+                    placeholder={t('create.ingredientName')}
                     className="bg-gray-50 rounded-xl px-4 py-3 text-sm outline-hidden"
                     value={ingredient.name}
                     onChange={(event) => updateIngredient(index, { name: event.target.value })}
@@ -184,7 +263,7 @@ export const CreateRecipe: React.FC = () => {
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="Qty"
+                    placeholder={t('create.quantity')}
                     className="bg-gray-50 rounded-xl px-4 py-3 text-sm outline-hidden"
                     value={ingredient.quantity}
                     onChange={(event) => updateIngredient(index, { quantity: Number(event.target.value) })}
@@ -192,7 +271,7 @@ export const CreateRecipe: React.FC = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Unit"
+                    placeholder={t('create.unit')}
                     className="bg-gray-50 rounded-xl px-4 py-3 text-sm outline-hidden"
                     value={ingredient.unit}
                     onChange={(event) => updateIngredient(index, { unit: event.target.value })}
@@ -213,25 +292,25 @@ export const CreateRecipe: React.FC = () => {
                 onClick={addIngredient}
                 className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-gray-400 uppercase tracking-widest hover:border-brand-olive hover:text-brand-olive transition-all"
               >
-                Add ingredient
+                {t('create.addIngredient')}
               </button>
             </div>
           </section>
 
           <section className="space-y-4">
-            <h3 className="font-serif text-xl px-2">Preparation Steps</h3>
+            <h3 className="font-serif text-xl px-2">{t('create.steps')}</h3>
             <div className="space-y-4">
               {steps.map((step, index) => (
                 <div key={index} className="space-y-3 bg-white p-6 rounded-2xl border border-gray-100">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-brand-olive uppercase tracking-widest">Step {index + 1}</span>
+                    <span className="text-xs font-bold text-brand-olive uppercase tracking-widest">{t('create.step', { count: index + 1 })}</span>
                     <button type="button" onClick={() => removeStep(index)} className="text-gray-300 hover:text-red-400">
                       <Trash2 size={16} />
                     </button>
                   </div>
                   <input
                     className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-hidden"
-                    placeholder="Short step title"
+                    placeholder={t('create.stepTitle')}
                     value={step.title || ''}
                     onChange={(event) => {
                       const nextSteps = [...steps];
@@ -241,7 +320,7 @@ export const CreateRecipe: React.FC = () => {
                   />
                   <textarea
                     className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm outline-hidden resize-none min-h-[80px]"
-                    placeholder="Describe this step"
+                    placeholder={t('create.stepDescription')}
                     value={step.description}
                     onChange={(event) => {
                       const nextSteps = [...steps];
@@ -257,7 +336,7 @@ export const CreateRecipe: React.FC = () => {
                 onClick={addStep}
                 className="w-full py-4 bg-brand-olive/5 text-brand-olive rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2"
               >
-                <Plus size={16} /> Add step
+                <Plus size={16} /> {t('create.addStep')}
               </button>
             </div>
           </section>
@@ -267,7 +346,7 @@ export const CreateRecipe: React.FC = () => {
           <section className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                <Clock size={10} /> Prep
+                <Clock size={10} /> {t('create.prep')}
               </label>
               <input
                 type="number"
@@ -279,7 +358,7 @@ export const CreateRecipe: React.FC = () => {
             </div>
             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                <Clock size={10} /> Cook
+                <Clock size={10} /> {t('create.cook')}
               </label>
               <input
                 type="number"
@@ -291,7 +370,7 @@ export const CreateRecipe: React.FC = () => {
             </div>
             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                <ChefHat size={10} /> Level
+                <ChefHat size={10} /> {t('create.level')}
               </label>
               <input
                 type="number"
@@ -304,7 +383,7 @@ export const CreateRecipe: React.FC = () => {
             </div>
             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                <Users size={10} /> Servings
+                <Users size={10} /> {t('create.servings')}
               </label>
               <input
                 type="number"
@@ -318,7 +397,7 @@ export const CreateRecipe: React.FC = () => {
 
           <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-              <Info size={10} /> Category
+              <Info size={10} /> {t('create.category')}
             </label>
             <select
               className="w-full font-serif text-sm outline-hidden bg-transparent"
@@ -326,10 +405,27 @@ export const CreateRecipe: React.FC = () => {
               onChange={(event) => setCategoryId(event.target.value)}
               required
             >
-              <option value="">Select category</option>
+              <option value="">{t('create.selectCategory')}</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {category.name}
+                  {categoryLabel(category)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-2">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+              <ChefHat size={10} /> {t('common.cuisine')}
+            </label>
+            <select
+              className="w-full font-serif text-sm outline-hidden bg-transparent"
+              value={cuisine}
+              onChange={(event) => setCuisine(event.target.value)}
+            >
+              {['International', 'Italian', 'French', 'Spanish', 'Burundian / East African', 'Mediterranean'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
                 </option>
               ))}
             </select>
@@ -342,7 +438,7 @@ export const CreateRecipe: React.FC = () => {
               onChange={(event) => setIsPublic(event.target.checked)}
               className="w-5 h-5 accent-brand-olive"
             />
-            <span className="text-sm font-medium text-gray-600">Visible in the public catalog</span>
+            <span className="text-sm font-medium text-gray-600">{t('create.visiblePublic')}</span>
           </label>
 
           {error && <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-2xl p-4">{error}</p>}
@@ -353,7 +449,7 @@ export const CreateRecipe: React.FC = () => {
             disabled={loading || !categoryId}
             className="w-full btn-olive py-5 shadow-xl shadow-brand-olive/20 disabled:opacity-50"
           >
-            {loading ? 'Saving recipe...' : 'Save Recipe'}
+            {loading ? t('create.saving') : t('create.saveRecipe')}
           </motion.button>
         </aside>
       </form>

@@ -5,5 +5,15 @@ coverage/
 .DS_Store
 *.log
 *.err
+*.aux
+*.lof
+*.lot
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+uploads/recipes/*
+!uploads/recipes/.gitkeep
 .env*
 !.env.example

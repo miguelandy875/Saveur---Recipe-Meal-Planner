@@ -90,6 +90,11 @@ const recipeSchema = new mongoose.Schema(
       ref: 'Category',
       required: true,
     },
+    cuisine: {
+      type: String,
+      trim: true,
+      default: 'International',
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

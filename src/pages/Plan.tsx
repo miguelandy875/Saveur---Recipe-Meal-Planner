@@ -5,11 +5,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../services/AuthContext';
 import { getMealPlanForDate, addToMealPlan } from '../services/mealPlanService';
 import { getFeaturedRecipes, getUserRecipes } from '../services/recipeService';
+import { useI18n } from '../services/i18n';
 import { Recipe } from '../types';
 
 export const Plan: React.FC = () => {
   const { user } = useAuth();
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const { t, language } = useI18n();
   const [selectedDay, setSelectedDay] = useState(0);
   const [mealPlan, setMealPlan] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,13 @@ export const Plan: React.FC = () => {
     date.setDate(currentWeekStart.getDate() + index);
     return date.toISOString().split('T')[0];
   };
+
+  const days = Array.from({ length: 7 }, (_, index) =>
+    new Date(getDayDate(index)).toLocaleDateString(language, { weekday: 'short' })
+  );
+
+  const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+  const mealLabel = (type: (typeof mealTypes)[number]) => t(`meal.${type}`);
 
   const fetchMealPlan = async () => {
     setLoading(true);
@@ -107,12 +115,10 @@ export const Plan: React.FC = () => {
     return (
       <div className="max-w-xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm space-y-4">
         <ChefHat size={42} className="mx-auto text-brand-olive" />
-        <h1 className="text-3xl font-serif">Sign in to plan meals</h1>
-        <p className="text-sm text-gray-500">
-          Meal plans belong to each authenticated user, which matches the project requirements.
-        </p>
+        <h1 className="text-3xl font-serif">{t('planner.signInTitle')}</h1>
+        <p className="text-sm text-gray-500">{t('planner.signInText')}</p>
         <Link to="/profile" className="btn-olive inline-flex items-center justify-center h-12 px-6">
-          Go to account
+          {t('create.goToAccount')}
         </Link>
       </div>
     );
@@ -122,11 +128,11 @@ export const Plan: React.FC = () => {
     <div className="space-y-8 pb-20">
       <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-serif">Meal Planner</h1>
-          <p className="text-gray-500 text-sm mt-1">Week of {getDayDate(0)} - {getDayDate(6)}</p>
+          <h1 className="text-3xl font-serif">{t('planner.title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('planner.weekOf', { start: getDayDate(0), end: getDayDate(6) })}</p>
         </div>
         <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 italic font-serif text-brand-olive text-sm">
-          {new Date(getDayDate(selectedDay)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {new Date(getDayDate(selectedDay)).toLocaleDateString(language, { month: 'long', year: 'numeric' })}
         </div>
       </header>
 
@@ -151,13 +157,13 @@ export const Plan: React.FC = () => {
 
       {/* Meal Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => {
+        {mealTypes.map((type) => {
           const meal = mealPlan[type];
           return (
             <div key={type} className="space-y-3">
               <div className="flex justify-between items-center px-2">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">{type}</h3>
-                {!meal && <span className="text-[10px] bg-red-100 text-red-500 px-2 py-0.5 rounded-full font-bold uppercase">Empty Slot</span>}
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">{mealLabel(type)}</h3>
+                {!meal && <span className="text-[10px] bg-red-100 text-red-500 px-2 py-0.5 rounded-full font-bold uppercase">{t('planner.emptySlot')}</span>}
               </div>
               
               {loading ? (
@@ -193,7 +199,7 @@ export const Plan: React.FC = () => {
                   <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-brand-olive/10 group-hover:text-brand-olive transition-colors">
                     <Plus size={24} />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">Pick a recipe</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em]">{t('planner.pickRecipe')}</span>
                 </button>
               )}
             </div>
@@ -203,14 +209,15 @@ export const Plan: React.FC = () => {
 
       <div className="bg-brand-olive rounded-[32px] p-6 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-        <h3 className="text-xl font-serif mb-2 relative z-10 text-brand-cream">Nutritional Insight</h3>
+        <h3 className="text-xl font-serif mb-2 relative z-10 text-brand-cream">{t('planner.nutrition')}</h3>
         <p className="text-sm opacity-80 leading-relaxed relative z-10">
-          Your current plan for {days[selectedDay]} is {Object.values(mealPlan).filter(m => m !== null).length >= 3 ? 'well-balanced' : 'incomplete'}. 
-          {Object.values(mealPlan).filter(m => m !== null).length >= 3 ? " You're meeting your primary nutritional goals." : " Try adding more meals to see insights."}
+          {Object.values(mealPlan).filter(m => m !== null).length >= 3
+            ? t('planner.nutritionTextComplete', { day: days[selectedDay] })
+            : t('planner.nutritionTextIncomplete', { day: days[selectedDay] })}
         </p>
         <div className="mt-4 flex gap-4 relative z-10">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase opacity-60">Estimated Calories</span>
+            <span className="text-[10px] font-bold uppercase opacity-60">{t('planner.estimatedCalories')}</span>
             <span className="text-sm font-bold">{Object.values(mealPlan).filter(m => m !== null).length * 520} kcal</span>
           </div>
         </div>
@@ -235,8 +242,8 @@ export const Plan: React.FC = () => {
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-brand-cream/30">
                 <div>
-                  <h3 className="text-xl font-serif capitalize">Pick {selectingMealType}</h3>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Select a recipe for your plan</p>
+                  <h3 className="text-xl font-serif capitalize">{t('planner.pick', { meal: selectingMealType ? mealLabel(selectingMealType as (typeof mealTypes)[number]) : '' })}</h3>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{t('planner.pickRecipe')}</p>
                 </div>
                 <button 
                   onClick={() => setIsPickerOpen(false)}
@@ -251,7 +258,7 @@ export const Plan: React.FC = () => {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <input 
                     type="text"
-                    placeholder="Search recipes..."
+                    placeholder={t('planner.searchPlaceholder')}
                     value={pickerSearch}
                     onChange={(e) => setPickerSearch(e.target.value)}
                     className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-brand-olive/20 outline-none"
@@ -288,7 +295,7 @@ export const Plan: React.FC = () => {
                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-300">
                       <ChefHat size={32} />
                     </div>
-                    <p className="text-gray-400 text-sm italic px-10">No recipes found. Try a different search or create a new recipe!</p>
+                    <p className="text-gray-400 text-sm italic px-10">{t('planner.noRecipes')}</p>
                   </div>
                 )}
               </div>

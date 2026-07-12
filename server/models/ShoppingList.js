@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { SHOPPING_CATEGORY_ORDER, SHOPPING_CATEGORIES } from '../utils/shoppingCategories.js';
 
 const shoppingItemSchema = new mongoose.Schema(
   {
@@ -19,7 +20,13 @@ const shoppingItemSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      default: 'Other',
+      enum: SHOPPING_CATEGORY_ORDER,
+      default: SHOPPING_CATEGORIES.OTHER,
+    },
+    source: {
+      type: String,
+      enum: ['generated', 'custom'],
+      default: 'generated',
     },
     checked: {
       type: Boolean,

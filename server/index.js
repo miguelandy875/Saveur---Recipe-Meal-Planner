@@ -14,6 +14,7 @@ import { groceryRoutes } from './routes/groceryRoutes.js';
 import { ingredientRoutes } from './routes/ingredientRoutes.js';
 import { mealPlanRoutes } from './routes/mealPlanRoutes.js';
 import { recipeRoutes } from './routes/recipeRoutes.js';
+import { uploadRoutes } from './routes/uploadRoutes.js';
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: '1mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'saveur-api' });
@@ -52,6 +54,7 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/meal-plans', mealPlanRoutes);
 app.use('/api/groceries', groceryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath));

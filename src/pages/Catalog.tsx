@@ -6,33 +6,18 @@ import {
   X, 
   Clock, 
   ChefHat, 
-  Star,
-  Coffee,
-  UtensilsCrossed,
-  Dessert,
-  Apple,
-  Salad,
-  Pizza,
-  Zap
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Recipe, Category } from '../types';
 import { getCategories, getFilteredRecipes } from '../services/recipeService';
-
-const getCategoryIcon = (name: string) => {
-  const n = name.toLowerCase();
-  if (n.includes('petit') || n.includes('breakfast')) return <Coffee size={20} />;
-  if (n.includes('plat') || n.includes('main') || n.includes('dinner')) return <UtensilsCrossed size={20} />;
-  if (n.includes('dessert') || n.includes('sweet')) return <Dessert size={20} />;
-  if (n.includes('starter') || n.includes('salad') || n.includes('salade')) return <Salad size={20} />;
-  if (n.includes('snack') || n.includes('gouter')) return <Apple size={20} />;
-  if (n.includes('pizza') || n.includes('fast')) return <Pizza size={20} />;
-  return <Zap size={20} />; // Default icon
-};
+import { useI18n } from '../services/i18n';
+import { getCategoryIcon } from '../utils/categoryIcons';
 
 export const Catalog: React.FC = () => {
   const location = useLocation();
+  const { t, categoryLabel } = useI18n();
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -76,6 +61,10 @@ export const Catalog: React.FC = () => {
   useEffect(() => {
     fetchAllRecipes();
   }, [selectedCategory, selectedDifficulty, selectedMaxTime]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory, selectedDifficulty, selectedMaxTime]);
 
   const fetchAllRecipes = async () => {
     setLoading(true);
@@ -155,15 +144,15 @@ export const Catalog: React.FC = () => {
   return (
     <div className="space-y-6 px-1">
       <header>
-        <h1 className="text-3xl font-serif">Recipe Catalog</h1>
-        <p className="text-gray-500 text-sm mt-1">Filter recipes by category, time and difficulty</p>
+        <h1 className="text-3xl font-serif">{t('catalog.title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('catalog.subtitle')}</p>
       </header>
 
       <div className="relative">
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input 
           type="text" 
-          placeholder="Search recipes, ingredients..."
+          placeholder={t('catalog.searchPlaceholder')}
           className="w-full bg-gray-100 rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-brand-olive outline-hidden transition-all text-sm font-medium"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -181,13 +170,13 @@ export const Catalog: React.FC = () => {
           {/* Top Collections (Categories) */}
           <section className="space-y-4">
             <div className="flex justify-between items-center px-2">
-              <h3 className="font-serif text-xl">Top Collections</h3>
+              <h3 className="font-serif text-xl">{t('catalog.topCollections')}</h3>
               {categories.length > COLLECTION_LIMIT && (
                 <button 
                   onClick={() => setShowAllCollections(!showAllCollections)}
                   className="text-[10px] font-bold text-brand-olive uppercase tracking-widest"
                 >
-                  {showAllCollections ? 'Show Less' : `View All (${categories.length})`}
+                  {showAllCollections ? t('catalog.showLess') : t('catalog.viewAll', { count: categories.length })}
                 </button>
               )}
             </div>
@@ -199,16 +188,18 @@ export const Catalog: React.FC = () => {
                     onClick={() => handleCategorySelect(cat.id)}
                     className={`relative h-28 rounded-3xl overflow-hidden group cursor-pointer border-2 transition-all ${selectedCategory === cat.id ? 'border-brand-olive' : 'border-transparent'}`}
                   >
-                    <img src={cat.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&fit=crop'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={cat.name} />
+                    <img src={cat.image || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&fit=crop'} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={categoryLabel(cat)} />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
                     <div className="absolute inset-0 flex items-center justify-between px-8 text-white">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-                          {getCategoryIcon(cat.name)}
+                          {getCategoryIcon(cat.name, 20)}
                         </div>
                         <div>
-                          <h4 className="text-xl font-serif font-medium">{cat.name}</h4>
-                          <span className="text-[10px] uppercase tracking-widest opacity-80">{selectedCategory === cat.id ? 'Viewing Collection' : 'Explore Collection'}</span>
+                          <h4 className="text-xl font-serif font-medium">{categoryLabel(cat)}</h4>
+                          <span className="text-[10px] uppercase tracking-widest opacity-80">
+                            {selectedCategory === cat.id ? t('catalog.viewingCollection') : t('catalog.exploreCollection')}
+                          </span>
                         </div>
                       </div>
                       <motion.div 
@@ -243,14 +234,14 @@ export const Catalog: React.FC = () => {
                                   </div>
                                   <h4 className="font-serif text-sm leading-tight truncate px-1">{recipe.title}</h4>
                                   <div className="flex items-center gap-2 text-[8px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                                    <Clock size={8} /> {recipe.prepTime + recipe.cookTime}m
+                                    <Clock size={8} /> {t('common.minutesShort', { count: recipe.prepTime + recipe.cookTime })}
                                   </div>
                                 </div>
                               </Link>
                             ))
                           ) : (
                             <div className="w-full py-10 text-center text-xs text-gray-400 italic">
-                              No recipes in this collection yet.
+                              {t('catalog.noCollectionRecipes')}
                             </div>
                           )}
                         </div>
@@ -264,12 +255,12 @@ export const Catalog: React.FC = () => {
 
           {/* Difficulty Filters */}
           <section className="space-y-4">
-            <h3 className="font-serif text-xl px-2">Difficulty Level</h3>
+            <h3 className="font-serif text-xl px-2">{t('catalog.difficulty')}</h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {[
-                { label: 'Beginner', val: 1 },
-                { label: 'Intermediate', val: 3 },
-                { label: 'Expert', val: 5 }
+                { label: t('catalog.beginner'), val: 1 },
+                { label: t('catalog.intermediate'), val: 3 },
+                { label: t('catalog.expert'), val: 5 }
               ].map((level) => (
                 <button 
                   key={level.label}
@@ -284,7 +275,7 @@ export const Catalog: React.FC = () => {
 
           {/* Time Filters */}
           <section className="space-y-4">
-            <h3 className="font-serif text-xl px-2">Max Cooking Time</h3>
+            <h3 className="font-serif text-xl px-2">{t('catalog.maxTime')}</h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {[15, 30, 45, 60].map((time) => (
                 <button 
@@ -292,7 +283,7 @@ export const Catalog: React.FC = () => {
                   onClick={() => handleTimeSelect(time)}
                   className={`px-6 py-3 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 ${selectedMaxTime === time ? 'bg-brand-olive border-brand-olive text-white shadow-lg shadow-brand-olive/20' : 'bg-white border-gray-100 text-gray-500'}`}
                 >
-                  Under {time} min
+                  {t('catalog.underMinutes', { count: time })}
                 </button>
               ))}
             </div>
@@ -304,12 +295,12 @@ export const Catalog: React.FC = () => {
       <section className="space-y-4 pb-10">
         <div className="flex justify-between items-center px-2">
           <h3 className="font-serif text-xl">
-            {isFiltering ? 'Search Results' : 'All Recipes'}
-            {selectedDifficulty ? ` - Level ${selectedDifficulty}` : ''}
-            {selectedCategory && isFiltering ? ` - ${categories.find(c => c.id === selectedCategory)?.name}` : ''}
+            {isFiltering ? t('catalog.searchResults') : t('catalog.allRecipes')}
+            {selectedDifficulty ? ` - ${t('common.level', { level: selectedDifficulty })}` : ''}
+            {selectedCategory && isFiltering ? ` - ${categoryLabel(categories.find(c => c.id === selectedCategory) || { name: '' })}` : ''}
           </h3>
           {isFiltering && (
-            <button onClick={clearFilters} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Clear</button>
+            <button onClick={clearFilters} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('common.clear')}</button>
           )}
         </div>
 
@@ -330,9 +321,15 @@ export const Catalog: React.FC = () => {
                     </div>
                     <h4 className="font-serif text-lg leading-tight truncate">{recipe.title}</h4>
                     <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      <Clock size={10} /> {recipe.prepTime + recipe.cookTime}m
+                      <Clock size={10} /> {t('common.minutesShort', { count: recipe.prepTime + recipe.cookTime })}
                       <span className="w-1 h-1 rounded-full bg-gray-300" />
-                      <ChefHat size={10} /> Lvl {recipe.difficulty}
+                      <ChefHat size={10} /> {t('common.level', { level: recipe.difficulty })}
+                      {recipe.cuisine && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-gray-300" />
+                          <span>{recipe.cuisine}</span>
+                        </>
+                      )}
                     </div>
                   </motion.div>
                 </Link>
@@ -350,7 +347,7 @@ export const Catalog: React.FC = () => {
                   <ChevronRight size={18} className="rotate-180" />
                 </button>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Page {currentPage} of {totalPages}
+                  {t('common.pageOf', { page: currentPage, total: totalPages })}
                 </span>
                 <button 
                   disabled={currentPage === totalPages}
@@ -367,13 +364,13 @@ export const Catalog: React.FC = () => {
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-200">
               <SearchIcon size={32} />
             </div>
-            <p className="text-gray-400 text-sm">No recipes found matching these filters.</p>
+            <p className="text-gray-400 text-sm">{t('catalog.noRecipes')}</p>
             {isFiltering && (
               <button 
                 onClick={clearFilters}
                 className="text-[10px] font-bold text-brand-olive underline uppercase tracking-widest"
               >
-                Clear all filters
+                {t('catalog.clearFilters')}
               </button>
             )}
           </div>
@@ -398,13 +395,13 @@ export const Catalog: React.FC = () => {
               className="fixed top-0 right-0 h-full w-4/5 bg-white z-50 shadow-2xl p-8 space-y-10"
             >
               <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-serif">Filters</h2>
+                <h2 className="text-3xl font-serif">{t('catalog.filters')}</h2>
                 <button onClick={() => setShowFilters(false)}><X size={24} /></button>
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">By Collection</h4>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t('catalog.byCollection')}</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {categories.map(cat => (
                       <button 
@@ -412,14 +409,14 @@ export const Catalog: React.FC = () => {
                         onClick={() => handleCategorySelect(selectedCategory === cat.id ? null : cat.id)}
                         className={`px-3 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-tighter transition-all border text-center ${selectedCategory === cat.id ? 'bg-brand-olive border-brand-olive text-white' : 'border-gray-100 text-gray-600'}`}
                       >
-                        {cat.name}
+                        {categoryLabel(cat)}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">By Difficulty</h4>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t('catalog.byDifficulty')}</h4>
                   <div className="flex flex-wrap gap-2">
                     {[1, 2, 3, 4, 5].map(v => (
                       <button 
@@ -433,7 +430,7 @@ export const Catalog: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Max Time</h4>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t('catalog.maxTimeShort')}</h4>
                   <div className="flex flex-wrap gap-2">
                     {[15, 30, 60, 120].map(t => (
                       <button 
@@ -453,13 +450,13 @@ export const Catalog: React.FC = () => {
                   onClick={() => setShowFilters(false)}
                   className="w-full btn-olive py-4 shadow-xl shadow-brand-olive/20"
                 >
-                  Apply Filters
+                  {t('common.apply')}
                 </button>
                 <button 
                   onClick={clearFilters}
                   className="w-full text-[10px] font-bold text-gray-400 uppercase tracking-widest py-2"
                 >
-                  Reset Everything
+                  {t('common.reset')}
                 </button>
               </div>
             </motion.div>

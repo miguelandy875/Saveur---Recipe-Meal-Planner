@@ -2,6 +2,7 @@ import { Category } from '../models/Category.js';
 import { Favorite } from '../models/Favorite.js';
 import { Ingredient } from '../models/Ingredient.js';
 import { Recipe } from '../models/Recipe.js';
+import { suggestShoppingCategory } from '../utils/shoppingCategories.js';
 
 async function favoriteIdSet(userId, recipeIds) {
   if (!userId || recipeIds.length === 0) {
@@ -28,6 +29,8 @@ function serializeRecipe(recipe, favoriteIds = new Set()) {
     servings: recipeObject.servings,
     categoryId: category?._id?.toString?.() || category?.toString?.() || '',
     categoryName: category?.name || '',
+    categorySlug: category?.slug || '',
+    cuisine: recipeObject.cuisine || 'International',
     userId: owner?._id?.toString?.() || owner?.toString?.() || '',
     userName: owner?.name || '',
     imageUrl: recipeObject.imageUrl,
@@ -68,7 +71,9 @@ async function normalizeIngredients(ingredients = []) {
         $setOnInsert: {
           name,
           defaultUnit: unit,
-          category: item.category || 'Other',
+        },
+        $set: {
+          category: suggestShoppingCategory(name, item.category),
         },
       },
       { new: true, upsert: true }
@@ -108,7 +113,7 @@ export async function listRecipes(req, res, next) {
     }
 
     const recipes = await Recipe.find(filter)
-      .populate('category', 'name image')
+      .populate('category', 'name slug image')
       .populate('user', 'name')
       .sort({ createdAt: -1 })
       .limit(100);
@@ -124,7 +129,7 @@ export async function listRecipes(req, res, next) {
 export async function listUserRecipes(req, res, next) {
   try {
     const recipes = await Recipe.find({ user: req.user._id })
-      .populate('category', 'name image')
+      .populate('category', 'name slug image')
       .populate('user', 'name')
       .sort({ createdAt: -1 });
 
@@ -139,7 +144,7 @@ export async function listUserRecipes(req, res, next) {
 export async function getRecipe(req, res, next) {
   try {
     const recipe = await Recipe.findById(req.params.id)
-      .populate('category', 'name image')
+      .populate('category', 'name slug image')
       .populate('user', 'name');
 
     if (!recipe) {
@@ -168,6 +173,7 @@ export async function createRecipe(req, res, next) {
       difficulty,
       servings,
       categoryId,
+      cuisine,
       imageUrl,
       isPublic,
       steps,
@@ -201,6 +207,7 @@ export async function createRecipe(req, res, next) {
       difficulty: Number(difficulty),
       servings: Number(servings),
       category: category._id,
+      cuisine: cuisine || 'International',
       user: req.user._id,
       imageUrl,
       isPublic: isPublic !== false,
@@ -209,7 +216,7 @@ export async function createRecipe(req, res, next) {
     });
 
     const populated = await Recipe.findById(recipe._id)
-      .populate('category', 'name image')
+      .populate('category', 'name slug image')
       .populate('user', 'name');
 
     res.status(201).json({ data: serializeRecipe(populated) });

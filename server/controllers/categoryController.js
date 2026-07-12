@@ -8,6 +8,7 @@ export async function listCategories(_req, res, next) {
       data: categories.map((category) => ({
         id: category._id.toString(),
         name: category.name,
+        slug: category.slug,
         image: category.image,
       })),
     });

@@ -17,5 +17,7 @@ export function serializeUser(user) {
     displayName: user.name,
     email: user.email,
     role: user.role,
+    photoURL: user.photoURL || '',
+    preferredLanguage: user.preferredLanguage || 'en',
   };
 }
