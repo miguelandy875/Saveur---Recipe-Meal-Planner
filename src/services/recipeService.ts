@@ -110,6 +110,12 @@ export const uploadRecipeImage = async (file: File) => {
   return response.url;
 };
 
+export const deleteRecipe = async (recipeId: string) => {
+  await apiFetch<void>(`/recipes/${recipeId}`, {
+    method: 'DELETE',
+  });
+};
+
 export const getUserRecipes = async (_userId?: string) => {
   try {
     const response = await apiFetch<ListResponse<Recipe>>('/recipes/mine');

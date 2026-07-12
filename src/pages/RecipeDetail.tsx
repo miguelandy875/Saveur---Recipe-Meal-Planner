@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChefHat, ChevronLeft, ChevronRight, Clock, Heart, Users, X } from 'lucide-react';
-import { getRecipeById, toggleFavorite } from '../services/recipeService';
+import { ChefHat, ChevronLeft, ChevronRight, Clock, Heart, Trash2, Users, X } from 'lucide-react';
+import { deleteRecipe, getRecipeById, toggleFavorite } from '../services/recipeService';
 import { useAuth } from '../services/AuthContext';
 import { useI18n } from '../services/i18n';
 import { Recipe } from '../types';
@@ -16,6 +16,7 @@ export const RecipeDetail: React.FC = () => {
   const [showCookingMode, setShowCookingMode] = useState(false);
   const [activeCookingStep, setActiveCookingStep] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -35,6 +36,23 @@ export const RecipeDetail: React.FC = () => {
 
     const isFavorite = await toggleFavorite(user.uid, recipe.id);
     setRecipe({ ...recipe, isFavorite });
+  };
+
+  const handleDelete = async () => {
+    if (!recipe || deleting) return;
+
+    const confirmed = window.confirm(t('recipe.deleteConfirm'));
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteRecipe(recipe.id);
+      navigate('/profile');
+    } catch (error) {
+      console.error(error);
+      window.alert(t('recipe.deleteError'));
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -62,6 +80,7 @@ export const RecipeDetail: React.FC = () => {
   const recipeSteps = recipe.steps || [];
   const categoryName = categoryLabel({ name: recipe.categoryName || 'Recipe', slug: recipe.categorySlug });
   const activeStep = recipeSteps[activeCookingStep];
+  const canDeleteRecipe = Boolean(user && (recipe.userId === user.uid || user.role === 'admin'));
 
   return (
     <div className="space-y-8 pb-12">
@@ -81,15 +100,28 @@ export const RecipeDetail: React.FC = () => {
           >
             <ChevronLeft size={24} />
           </button>
-          <button
-            onClick={handleFavorite}
-            className={`w-12 h-12 rounded-xl backdrop-blur-md flex items-center justify-center hover:bg-white/30 ${
-              recipe.isFavorite ? 'bg-brand-gold text-black' : 'bg-white/20 text-white'
-            }`}
-            aria-label="Toggle favorite"
-          >
-            <Heart size={20} fill={recipe.isFavorite ? 'currentColor' : 'none'} />
-          </button>
+          <div className="flex items-center gap-3">
+            {canDeleteRecipe && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-12 h-12 rounded-xl bg-red-500/80 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 disabled:opacity-60"
+                aria-label={t('recipe.delete')}
+              >
+                <Trash2 size={20} />
+              </button>
+            )}
+            <button
+              onClick={handleFavorite}
+              className={`w-12 h-12 rounded-xl backdrop-blur-md flex items-center justify-center hover:bg-white/30 ${
+                recipe.isFavorite ? 'bg-brand-gold text-black' : 'bg-white/20 text-white'
+              }`}
+              aria-label="Toggle favorite"
+            >
+              <Heart size={20} fill={recipe.isFavorite ? 'currentColor' : 'none'} />
+            </button>
+          </div>
         </div>
 
         <div className="absolute bottom-8 left-6 right-6 md:left-8 md:right-8 text-white max-w-3xl space-y-4">

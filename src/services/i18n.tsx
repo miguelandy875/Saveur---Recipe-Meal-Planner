@@ -119,6 +119,9 @@ type TranslationKey =
   | 'recipe.stepCount'
   | 'recipe.noSteps'
   | 'recipe.finishCooking'
+  | 'recipe.delete'
+  | 'recipe.deleteConfirm'
+  | 'recipe.deleteError'
   | 'planner.signInTitle'
   | 'planner.signInText'
   | 'planner.title'
@@ -322,6 +325,9 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Step {current} of {total}',
     'recipe.noSteps': 'No preparation steps have been added yet.',
     'recipe.finishCooking': 'Finish cooking',
+    'recipe.delete': 'Delete recipe',
+    'recipe.deleteConfirm': 'Delete this recipe? This action cannot be undone.',
+    'recipe.deleteError': 'The recipe could not be deleted. Please try again.',
     'planner.signInTitle': 'Sign in to plan meals',
     'planner.signInText': 'Meal plans belong to each authenticated user.',
     'planner.title': 'Meal Planner',
@@ -522,6 +528,9 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Étape {current} sur {total}',
     'recipe.noSteps': 'Aucune étape de préparation n’a encore été ajoutée.',
     'recipe.finishCooking': 'Terminer',
+    'recipe.delete': 'Supprimer la recette',
+    'recipe.deleteConfirm': 'Supprimer cette recette ? Cette action est définitive.',
+    'recipe.deleteError': 'La recette n’a pas pu être supprimée. Veuillez réessayer.',
     'planner.signInTitle': 'Connectez-vous pour planifier',
     'planner.signInText': 'Les plans de repas appartiennent à chaque utilisateur.',
     'planner.title': 'Planificateur de repas',
@@ -722,6 +731,9 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Paso {current} de {total}',
     'recipe.noSteps': 'Todavía no se añadieron pasos de preparación.',
     'recipe.finishCooking': 'Terminar',
+    'recipe.delete': 'Eliminar receta',
+    'recipe.deleteConfirm': '¿Eliminar esta receta? Esta acción no se puede deshacer.',
+    'recipe.deleteError': 'No se pudo eliminar la receta. Inténtalo de nuevo.',
     'planner.signInTitle': 'Inicia sesión para planificar',
     'planner.signInText': 'Los planes pertenecen a cada usuario.',
     'planner.title': 'Planificador de comidas',
@@ -922,6 +934,9 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.stepCount': 'Passo {current} di {total}',
     'recipe.noSteps': 'Non sono ancora stati aggiunti passaggi.',
     'recipe.finishCooking': 'Termina',
+    'recipe.delete': 'Elimina ricetta',
+    'recipe.deleteConfirm': 'Eliminare questa ricetta? Questa azione non può essere annullata.',
+    'recipe.deleteError': 'Impossibile eliminare la ricetta. Riprova.',
     'planner.signInTitle': 'Accedi per pianificare',
     'planner.signInText': 'I piani pasto appartengono a ogni utente.',
     'planner.title': 'Piano pasti',
