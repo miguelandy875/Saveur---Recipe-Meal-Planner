@@ -3,6 +3,7 @@ import { Category } from '../models/Category.js';
 import { Ingredient } from '../models/Ingredient.js';
 import { Recipe } from '../models/Recipe.js';
 import { User } from '../models/User.js';
+import { suggestNutritionCode } from '../utils/nutritionCodes.js';
 import { SHOPPING_CATEGORIES } from '../utils/shoppingCategories.js';
 
 const categorySeeds = [
@@ -81,6 +82,17 @@ const ingredientSeeds = [
   { name: 'Oats', defaultUnit: 'g', category: SHOPPING_CATEGORIES.PASTA_GRAINS },
   { name: 'Blueberries', defaultUnit: 'g', category: SHOPPING_CATEGORIES.PRODUCE },
 ];
+
+// Typical weight (g) of one counted unit, used to convert "3 piece" of Eggs into grams for the nutrition computation.
+const gramsPerUnitSeeds = {
+  Eggs: 50,
+  Lemon: 60,
+  Avocado: 150,
+  Banana: 120,
+  Mango: 200,
+  Plantain: 180,
+  Bread: 30,
+};
 
 function byName(items) {
   return items.reduce((map, item) => {
@@ -585,11 +597,19 @@ export async function seedDemoData() {
   const ingredients = byName(
     await Promise.all(
       ingredientSeeds.map((ingredient) =>
-        Ingredient.findOneAndUpdate({ name: ingredient.name }, ingredient, {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert: true,
-        })
+        Ingredient.findOneAndUpdate(
+          { name: ingredient.name },
+          {
+            ...ingredient,
+            nutritionCode: suggestNutritionCode(ingredient.name),
+            ...(gramsPerUnitSeeds[ingredient.name] && { gramsPerUnit: gramsPerUnitSeeds[ingredient.name] }),
+          },
+          {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true,
+          }
+        )
       )
     )
   );
