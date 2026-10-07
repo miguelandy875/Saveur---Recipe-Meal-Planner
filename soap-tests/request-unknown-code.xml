@@ -1,0 +1,9 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:n="http://upg.bi/nutrition">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <n:getNutritionalValuesRequest>
+      <n:ingredientCode>TOMATO</n:ingredientCode>
+      <n:ingredientCode>XYZ</n:ingredientCode>
+    </n:getNutritionalValuesRequest>
+  </soapenv:Body>
+</soapenv:Envelope>
