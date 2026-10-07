@@ -32,6 +32,16 @@ describe('buildNutrition', () => {
     expect(nutrition.source).toBe('legacy-nutritional-db');
   });
 
+  it('treats a client fault WITHOUT unknown codes (e.g. XSD validation error) as unavailable, with no retry', async () => {
+    const fault = new NutritionFaultError('Validation error', { isClientFault: true, unknownCodes: [] });
+    const fetchNutrition = vi.fn().mockRejectedValue(fault);
+
+    const nutrition = await buildNutrition(entries, 1, { fetchNutrition, logger });
+
+    expect(nutrition).toMatchObject({ status: 'unavailable', unavailableReason: 'Validation error' });
+    expect(fetchNutrition).toHaveBeenCalledTimes(1);
+  });
+
   it('marks nutrition unavailable (no throw) when the service is down', async () => {
     const fetchNutrition = vi.fn().mockRejectedValue(new NutritionUnavailableError('Nutritional service unavailable (ECONNREFUSED).'));
     logger.warn.mockClear();
