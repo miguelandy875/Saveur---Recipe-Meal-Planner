@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChefHat, ChevronLeft, ChevronRight, Clock, Heart, Pencil, Trash2, Users, X } from 'lucide-react';
 import { deleteRecipe, getRecipeById, toggleFavorite } from '../services/recipeService';
+import { NutritionCard } from '../components/NutritionCard';
 import { useAuth } from '../services/AuthContext';
 import { useI18n } from '../services/i18n';
 import { Recipe } from '../types';
@@ -230,6 +231,8 @@ export const RecipeDetail: React.FC = () => {
           {t('recipe.startCooking')}
         </button>
       </section>
+
+      <NutritionCard nutrition={recipe.nutrition} />
 
       {showCookingMode && (
         <div className="fixed inset-0 z-50 bg-brand-cream/95 backdrop-blur-md flex items-center justify-center p-4">
