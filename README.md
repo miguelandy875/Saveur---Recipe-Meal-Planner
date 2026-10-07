@@ -70,6 +70,51 @@ Frontend: `http://localhost:3000`
 
 Backend health check: `http://localhost:5000/api/health`
 
+## Run locally on WSL
+
+Prerequisites: MongoDB 8.0 installed as a systemd service, Java 17+ (21 works), Maven, Node 22.
+Open one terminal per service (steps 2 to 4 each keep a process in the foreground).
+
+1. **MongoDB** (system service):
+
+```bash
+sudo systemctl start mongod
+```
+
+Check: `systemctl is-active mongod` prints `active`, and `mongosh --quiet --eval 'db.runCommand({ping:1}).ok'` prints `1`.
+
+2. **Legacy nutritional database** (Spring Boot SOAP service, optional: Saveur still works without it):
+
+```bash
+cd legacy-nutritional-db && mvn spring-boot:run
+```
+
+3. **Saveur API** (needs `.env` with `MONGO_URI=mongodb://127.0.0.1:27017/saveur`, see `.env.example`):
+
+```bash
+npm install && npm run api
+```
+
+4. **Frontend**:
+
+```bash
+npm run dev
+```
+
+| What | URL |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| API health check | http://localhost:5000/api/health |
+| SOAP WSDL | http://localhost:8080/ws/mon-service.wsdl |
+| SOAP endpoint | http://localhost:8080/ws |
+| H2 console (legacy SQL database) | http://localhost:8080/h2-console |
+
+Inspect the stored nutrition of the latest recipe:
+
+```bash
+mongosh --quiet saveur --eval 'printjson(db.recipes.find({}, {title:1, nutrition:1}).sort({createdAt:-1}).limit(1).toArray())'
+```
+
 ## Demo Login
 
 The backend seeds demo data automatically when the database is empty.
