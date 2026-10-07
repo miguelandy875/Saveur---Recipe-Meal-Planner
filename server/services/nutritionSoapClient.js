@@ -30,6 +30,9 @@ const toArray = (value) => {
   return Array.isArray(value) ? value : [value];
 };
 
+// node-soap returns an element that carries attributes (e.g. <faultstring xml:lang="en">) as { attributes, $value }.
+const textOf = (value) => (value !== null && typeof value === 'object' ? String(value.$value ?? '') : String(value ?? ''));
+
 /**
  * Raw node-soap result -> clean JSON. node-soap quirks handled here:
  *  - a list with ONE element is an object, not an array; an empty list is '' or missing;
@@ -52,8 +55,8 @@ export function normalizeResponse(raw) {
 export function toNutritionError(error) {
   const fault = error?.root?.Envelope?.Body?.Fault;
   if (fault) {
-    const faultCode = String(fault.faultcode ?? fault.Code?.Value ?? '');
-    const faultString = String(fault.faultstring ?? fault.Reason?.Text?.$value ?? fault.Reason?.Text ?? 'SOAP fault');
+    const faultCode = textOf(fault.faultcode ?? fault.Code?.Value);
+    const faultString = textOf(fault.faultstring ?? fault.Reason?.Text) || 'SOAP fault';
     const unknownCodes = toArray(fault.detail?.getNutritionalValuesFault?.unknownCode).map(String);
     return new NutritionFaultError(faultString, {
       faultCode,

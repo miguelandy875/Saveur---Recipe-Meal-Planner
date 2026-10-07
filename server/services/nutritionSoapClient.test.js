@@ -53,6 +53,15 @@ describe('toNutritionError', () => {
     expect(error.message).toBe('Unknown ingredient codes: XYZ, ABC');
   });
 
+  it('reads a faultstring carrying an xml:lang attribute (real node-soap shape)', () => {
+    const error = toNutritionError({ root: { Envelope: { Body: { Fault: {
+      faultcode: 'SOAP-ENV:Client',
+      faultstring: { attributes: { 'xml:lang': 'en' }, $value: 'Unknown ingredient code: XYZ' },
+      detail: { getNutritionalValuesFault: { unknownCode: 'XYZ' } },
+    } } } } });
+    expect(error.message).toBe('Unknown ingredient code: XYZ');
+  });
+
   it('accepts a single unknown code (object instead of array)', () => {
     const error = toNutritionError({ root: { Envelope: { Body: { Fault: {
       faultcode: 'SOAP-ENV:Client', faultstring: 'Unknown ingredient code: XYZ',
