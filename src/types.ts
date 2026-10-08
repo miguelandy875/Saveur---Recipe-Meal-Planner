@@ -57,6 +57,8 @@ export interface RecipeNutrition {
   totalProteins: number | null;
   totalCarbs: number | null;
   totalFats: number | null;
+  /** Some quantities were converted from pieces/spoons/default weights: values are approximate (shown with ≈). */
+  approximate: boolean;
   perServing: NutritionMacros | null;
   allergens: string[];
   skippedIngredients: { name: string; reason: string }[];

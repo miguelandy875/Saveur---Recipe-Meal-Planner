@@ -24,6 +24,7 @@ function serializeNutrition(nutrition) {
     totalProteins: nutrition.totalProteins ?? null,
     totalCarbs: nutrition.totalCarbs ?? null,
     totalFats: nutrition.totalFats ?? null,
+    approximate: Boolean(nutrition.approximate),
     perServing: nutrition.perServing
       ? {
           calories: nutrition.perServing.calories,

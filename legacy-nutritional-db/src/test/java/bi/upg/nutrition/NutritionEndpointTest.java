@@ -56,6 +56,22 @@ class NutritionEndpointTest {
     }
 
     @Test
+    void commonIngredientsAddedFromUsdaAreAvailable() throws Exception {
+        client.sendRequest(withPayload(request("ONION", "GREEN_PEPPER", "GARLIC", "CARROT", "BELL_PEPPER", "SALT", "BEEF")))
+                .andExpect(validPayload(new ClassPathResource("xsd/nutrition.xsd")))
+                .andExpect(xpath("count(/n:getNutritionalValuesResponse/n:ingredient)", NS_MAP).evaluatesTo(7))
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[1]/n:caloriesPer100g", NS_MAP).evaluatesTo("40.00"))
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:caloriesPer100g", NS_MAP).evaluatesTo("20.00"))
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:carbs", NS_MAP).evaluatesTo("4.64"));
+    }
+
+    @Test
+    void xyzAndSaffronStayUnknownSoTheFaultDemoStillWorks() throws Exception {
+        client.sendRequest(withPayload(request("TOMATO", "XYZ", "SAFFRON")))
+                .andExpect(clientOrSenderFault("Unknown ingredient codes: XYZ, SAFFRON"));
+    }
+
+    @Test
     void duplicateCodesAreReturnedOnce() throws Exception {
         client.sendRequest(withPayload(request("BUTTER", "BUTTER")))
                 .andExpect(xpath("count(/n:getNutritionalValuesResponse/n:ingredient)", NS_MAP).evaluatesTo(1));

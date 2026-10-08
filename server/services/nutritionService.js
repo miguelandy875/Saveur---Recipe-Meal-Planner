@@ -3,6 +3,7 @@
 // It NEVER throws: a failing legacy service must not prevent a recipe from being saved.
 import { Ingredient } from '../models/Ingredient.js';
 import { NUTRITION_SOURCE } from '../models/Recipe.js';
+import { gramsPerPieceFor } from '../utils/gramsPerPiece.js';
 import { suggestNutritionCode } from '../utils/nutritionCodes.js';
 import { computeRecipeNutrition } from './nutritionCalculator.js';
 import { NutritionFaultError, getNutritionalValues } from './nutritionSoapClient.js';
@@ -74,12 +75,14 @@ export async function computeRecipeNutritionFor(recipeIngredients, servings, dep
 
     const entries = recipeIngredients.map((item) => {
       const doc = byId.get(item.ingredient?.toString());
+      const code = doc?.nutritionCode || suggestNutritionCode(item.name);
       return {
         name: item.name,
         quantity: item.quantity,
         unit: item.unit,
-        code: doc?.nutritionCode || suggestNutritionCode(item.name),
-        gramsPerUnit: doc?.gramsPerUnit,
+        code,
+        // curated weight on the Ingredient document > USDA table by legacy code > (calculator) 100 g estimate
+        gramsPerUnit: doc?.gramsPerUnit || gramsPerPieceFor(code),
       };
     });
 

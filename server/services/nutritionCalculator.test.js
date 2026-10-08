@@ -3,8 +3,8 @@ import { DEFAULT_GRAMS_PER_UNIT, computeRecipeNutrition, toGrams } from './nutri
 
 describe('toGrams (unit conversion)', () => {
   it('converts mass units exactly', () => {
-    expect(toGrams(250, 'g')).toEqual({ grams: 250, estimated: false });
-    expect(toGrams(1.5, 'kg')).toEqual({ grams: 1500, estimated: false });
+    expect(toGrams(250, 'g')).toEqual({ grams: 250, estimated: false, approximate: false });
+    expect(toGrams(1.5, 'kg')).toEqual({ grams: 1500, estimated: false, approximate: false });
     expect(toGrams(2, 'OZ').grams).toBeCloseTo(56.699, 3);
   });
 
@@ -17,12 +17,29 @@ describe('toGrams (unit conversion)', () => {
   });
 
   it('uses the ingredient weight for counted units', () => {
-    expect(toGrams(3, 'piece', 50)).toEqual({ grams: 150, estimated: false });
-    expect(toGrams(4, 'slice', 30)).toEqual({ grams: 120, estimated: false });
+    expect(toGrams(3, 'piece', 50)).toEqual({ grams: 150, estimated: false, approximate: true });
+    expect(toGrams(4, 'slice', 30)).toEqual({ grams: 120, estimated: false, approximate: true });
   });
 
   it('falls back to a flagged estimate when a counted unit has no known weight', () => {
-    expect(toGrams(2, 'unit')).toEqual({ grams: 2 * DEFAULT_GRAMS_PER_UNIT, estimated: true });
+    expect(toGrams(2, 'unit')).toEqual({ grams: 2 * DEFAULT_GRAMS_PER_UNIT, estimated: true, approximate: true });
+  });
+
+  it('flags approximate conversions: counted units, spoons/cups, pinch/dash and default weights; g/ml stay exact', () => {
+    expect(toGrams(100, 'g').approximate).toBe(false);
+    expect(toGrams(1, 'kg').approximate).toBe(false);
+    expect(toGrams(450, 'ml').approximate).toBe(false);
+    expect(toGrams(1, 'l').approximate).toBe(false);
+    expect(toGrams(1, 'pcs', 110).approximate).toBe(true);
+    expect(toGrams(1, 'tbsp').approximate).toBe(true);
+    expect(toGrams(1, 'tsp').approximate).toBe(true);
+    expect(toGrams(1, 'cup').approximate).toBe(true);
+    expect(toGrams(1, 'pinch').approximate).toBe(true);
+    expect(toGrams(2, 'unit').approximate).toBe(true);
+  });
+
+  it('treats "pcs" like a counted unit', () => {
+    expect(toGrams(3, 'pcs', 44)).toEqual({ grams: 132, estimated: false, approximate: true });
   });
 
   it('returns null for unsupported units or invalid quantities', () => {
@@ -79,5 +96,44 @@ describe('computeRecipeNutrition', () => {
     const result = computeRecipeNutrition([{ name: 'Eggs', quantity: 2, unit: 'piece', code: 'EGG_WHOLE' }], nutritionByCode, 1);
     expect(result.warnings).toHaveLength(1);
     expect(result.totalCalories).toBe(286); // 200 g * 1.43
+  });
+
+  it('is NOT approximate when every quantity is an exact mass/ml, and IS when one comes from pcs', () => {
+    const exact = computeRecipeNutrition([{ name: 'Flour', quantity: 250, unit: 'g', code: 'FLOUR_WHEAT' }], nutritionByCode, 1);
+    expect(exact.approximate).toBe(false);
+
+    const mixed = computeRecipeNutrition(
+      [
+        { name: 'Flour', quantity: 250, unit: 'g', code: 'FLOUR_WHEAT' },
+        { name: 'Egg', quantity: 3, unit: 'pcs', code: 'EGG_WHOLE', gramsPerUnit: 44 },
+      ],
+      nutritionByCode,
+      1
+    );
+    expect(mixed.approximate).toBe(true);
+    expect(mixed.status).toBe('complete'); // approximate is independent from status
+  });
+
+  it('computes an omelette with onion and green pepper from USDA values (hand-checked)', () => {
+    const usda = new Map([
+      ['EGG_WHOLE', { code: 'EGG_WHOLE', caloriesPer100g: 143, proteins: 12.6, carbs: 0.7, fats: 9.5, allergens: ['EGGS'] }],
+      ['ONION', { code: 'ONION', caloriesPer100g: 40, proteins: 1.1, carbs: 9.34, fats: 0.1, allergens: [] }],
+      ['GREEN_PEPPER', { code: 'GREEN_PEPPER', caloriesPer100g: 20, proteins: 0.86, carbs: 4.64, fats: 0.17, allergens: [] }],
+    ]);
+    const result = computeRecipeNutrition(
+      [
+        { name: 'Egg', quantity: 3, unit: 'pcs', code: 'EGG_WHOLE', gramsPerUnit: 44 },
+        { name: 'Onion', quantity: 1, unit: 'pcs', code: 'ONION', gramsPerUnit: 110 },
+        { name: 'green pepper', quantity: 1, unit: 'pcs', code: 'GREEN_PEPPER', gramsPerUnit: 119 },
+      ],
+      usda,
+      4
+    );
+
+    // 132 g egg x 1.43 = 188.76 ; 110 g onion x 0.40 = 44 ; 119 g pepper x 0.20 = 23.8  => 256.56 -> 256.6
+    expect(result.totalCalories).toBe(256.6);
+    expect(result.status).toBe('complete');
+    expect(result.approximate).toBe(true);
+    expect(result.perServing.calories).toBe(64.1); // 256.56 / 4 = 64.14
   });
 });

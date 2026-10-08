@@ -21,6 +21,8 @@ export const NutritionCard: React.FC<{ nutrition?: RecipeNutrition | null }> = (
     );
   }
 
+  // "≈" marks values that rely on converted quantities (pieces, spoons, estimated weights).
+  const approx = nutrition.approximate ? '≈ ' : '';
   const rows: { label: string; unit: string; serving?: number; total: number | null }[] = [
     { label: t('nutrition.calories'), unit: 'kcal', serving: nutrition.perServing?.calories, total: nutrition.totalCalories },
     { label: t('nutrition.proteins'), unit: 'g', serving: nutrition.perServing?.proteins, total: nutrition.totalProteins },
@@ -48,8 +50,8 @@ export const NutritionCard: React.FC<{ nutrition?: RecipeNutrition | null }> = (
             {rows.map((row) => (
               <tr key={row.label} className="border-t border-gray-50 text-right">
                 <td className="text-left py-2 font-semibold text-gray-700">{row.label}</td>
-                <td className="py-2 font-bold text-brand-olive">{row.serving ?? '–'} {row.unit}</td>
-                <td className="py-2 text-gray-500">{row.total ?? '–'} {row.unit}</td>
+                <td className="py-2 font-bold text-brand-olive">{row.serving == null ? '–' : `${approx}${row.serving}`} {row.unit}</td>
+                <td className="py-2 text-gray-500">{row.total == null ? '–' : `${approx}${row.total}`} {row.unit}</td>
               </tr>
             ))}
           </tbody>
@@ -75,6 +77,9 @@ export const NutritionCard: React.FC<{ nutrition?: RecipeNutrition | null }> = (
         <p className="text-xs text-amber-700" title={nutrition.skippedIngredients.map((item) => item.name).join(', ')}>
           {t('nutrition.partial', { count: nutrition.skippedIngredients.length })}
         </p>
+      )}
+      {nutrition.approximate && (
+        <p className="text-xs text-gray-500" data-testid="nutrition-approximate-note">{t('nutrition.approximate')}</p>
       )}
       <p className="text-[10px] text-gray-400">{t('nutrition.source')}</p>
     </section>

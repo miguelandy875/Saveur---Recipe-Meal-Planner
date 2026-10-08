@@ -13,6 +13,7 @@ const base: RecipeNutrition = {
   totalProteins: 59.3,
   totalCarbs: 213.4,
   totalFats: 55.9,
+  approximate: false,
   perServing: { calories: 403.5, proteins: 14.8, carbs: 53.4, fats: 14 },
   allergens: ['EGGS', 'GLUTEN', 'LACTOSE'],
   skippedIngredients: [],
@@ -37,6 +38,19 @@ describe('NutritionCard', () => {
     expect(screen.getByText('403.5 kcal')).toBeInTheDocument();
     expect(screen.getByText('1614.1 kcal')).toBeInTheDocument();
     expect(screen.getAllByTestId('allergen-badge').map((badge) => badge.textContent)).toEqual(['Eggs', 'Gluten', 'Lactose']);
+  });
+
+  it('shows exact values without "≈" when every quantity was given in g/ml', () => {
+    renderCard(base);
+    expect(screen.queryByText(/≈/)).toBeNull();
+    expect(screen.queryByTestId('nutrition-approximate-note')).toBeNull();
+  });
+
+  it('marks totals and per-serving values with "≈" plus a note when some quantities were converted', () => {
+    renderCard({ ...base, approximate: true });
+    expect(screen.getByText('≈ 403.5 kcal')).toBeInTheDocument();
+    expect(screen.getByText('≈ 1614.1 kcal')).toBeInTheDocument();
+    expect(screen.getByTestId('nutrition-approximate-note')).toHaveTextContent(/Approximate values/);
   });
 
   it('flags partial values', () => {

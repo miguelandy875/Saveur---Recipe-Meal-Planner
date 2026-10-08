@@ -6,7 +6,9 @@
 //    (flagged as an estimate) when the ingredient has none;
 //  - an unknown unit means the ingredient is skipped and reported;
 //  - optional ingredients are included in the totals;
-//  - only the FINAL totals are rounded (to 1 decimal), never the intermediate values.
+//  - only the FINAL totals are rounded (to 1 decimal), never the intermediate values;
+//  - the result is flagged `approximate` when any counted ingredient was NOT given as an exact mass or
+//    ml/l volume: counted units (pcs...), spoons/cups, pinch/dash, or the 100 g default estimate.
 
 export const DEFAULT_GRAMS_PER_UNIT = 100;
 
@@ -45,6 +47,9 @@ const GRAMS_PER_SMALL_MEASURE = {
   dash: 0.6,
 };
 
+// Volume units that are real measuring units (ml, cl, dl, l) stay "exact"; household measures do not.
+const APPROXIMATE_VOLUME_UNITS = new Set(['tsp', 'teaspoon', 'tbsp', 'tablespoon', 'cup', 'cups']);
+
 const COUNTED_UNITS = new Set([
   'piece', 'pieces', 'pc', 'pcs', 'unit', 'units', 'slice', 'slices', 'whole', 'item', 'items',
   'clove', 'cloves', 'bunch',
@@ -54,20 +59,24 @@ const round1 = (value) => Math.round(value * 10) / 10;
 
 /**
  * Convert a quantity + unit to grams.
- * @returns {{ grams: number, estimated: boolean } | null} null when the unit is not supported.
+ * `estimated`: the weight of a counted unit is unknown (100 g default). `approximate`: the conversion is
+ * not an exact mass or ml/l volume (counted units, tsp/tbsp/cup, pinch/dash, default estimate).
+ * @returns {{ grams: number, estimated: boolean, approximate: boolean } | null} null when the unit is not supported.
  */
 export function toGrams(quantity, unit, gramsPerUnit) {
   const amount = Number(quantity);
   const key = (unit || '').toString().trim().toLowerCase();
   if (!Number.isFinite(amount) || amount < 0) return null;
 
-  if (key in GRAMS_PER_MASS_UNIT) return { grams: amount * GRAMS_PER_MASS_UNIT[key], estimated: false };
-  if (key in ML_PER_VOLUME_UNIT) return { grams: amount * ML_PER_VOLUME_UNIT[key], estimated: false };
-  if (key in GRAMS_PER_SMALL_MEASURE) return { grams: amount * GRAMS_PER_SMALL_MEASURE[key], estimated: true };
+  if (key in GRAMS_PER_MASS_UNIT) return { grams: amount * GRAMS_PER_MASS_UNIT[key], estimated: false, approximate: false };
+  if (key in ML_PER_VOLUME_UNIT) {
+    return { grams: amount * ML_PER_VOLUME_UNIT[key], estimated: false, approximate: APPROXIMATE_VOLUME_UNITS.has(key) };
+  }
+  if (key in GRAMS_PER_SMALL_MEASURE) return { grams: amount * GRAMS_PER_SMALL_MEASURE[key], estimated: true, approximate: true };
 
   if (COUNTED_UNITS.has(key)) {
     const known = Number(gramsPerUnit) > 0;
-    return { grams: amount * (known ? Number(gramsPerUnit) : DEFAULT_GRAMS_PER_UNIT), estimated: !known };
+    return { grams: amount * (known ? Number(gramsPerUnit) : DEFAULT_GRAMS_PER_UNIT), estimated: !known, approximate: true };
   }
 
   return null;
@@ -85,6 +94,7 @@ export function computeRecipeNutrition(entries, nutritionByCode, servings) {
   const skippedIngredients = [];
   const warnings = [];
   let counted = 0;
+  let approximate = false;
 
   for (const entry of entries) {
     if (!entry.code) {
@@ -108,6 +118,7 @@ export function computeRecipeNutrition(entries, nutritionByCode, servings) {
       warnings.push(`${entry.name}: weight of "${entry.unit}" estimated (${DEFAULT_GRAMS_PER_UNIT} g/unit by default).`);
     }
 
+    approximate = approximate || converted.approximate;
     const factor = converted.grams / 100;
     totals.calories += data.caloriesPer100g * factor;
     totals.proteins += data.proteins * factor;
@@ -122,6 +133,7 @@ export function computeRecipeNutrition(entries, nutritionByCode, servings) {
   return {
     status: skippedIngredients.length === 0 && counted > 0 ? 'complete' : 'partial',
     countedIngredients: counted,
+    approximate,
     totalCalories: round1(totals.calories),
     totalProteins: round1(totals.proteins),
     totalCarbs: round1(totals.carbs),

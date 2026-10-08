@@ -20,6 +20,27 @@ const NAME_TO_NUTRITION_CODE = {
   chocolate: 'CHOCOLATE_MILK',
   potatoes: 'POTATO',
   tuna: 'TUNA_CANNED',
+  // Plural / synonym forms only: singular names ("onion", "carrot", "garlic", "salt", "beef", "mango"...)
+  // already derive to the legacy code ("ONION", "CARROT", ...).
+  onions: 'ONION',
+  carrots: 'CARROT',
+  'garlic clove': 'GARLIC',
+  'garlic cloves': 'GARLIC',
+  'ground beef': 'BEEF',
+  'minced beef': 'BEEF',
+  'green bell pepper': 'GREEN_PEPPER',
+  'green peppers': 'GREEN_PEPPER',
+  'red pepper': 'BELL_PEPPER',
+  'red bell pepper': 'BELL_PEPPER',
+  'bell pepper': 'BELL_PEPPER',
+  'bell peppers': 'BELL_PEPPER',
+  'sweet corn': 'CORN',
+  lemons: 'LEMON',
+  avocados: 'AVOCADO',
+  bananas: 'BANANA',
+  mangoes: 'MANGO',
+  plantains: 'PLANTAIN',
+  cucumbers: 'CUCUMBER',
 };
 
 /**

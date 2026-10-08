@@ -73,6 +73,9 @@ const nutritionSchema = new mongoose.Schema(
     totalProteins: Number,
     totalCarbs: Number,
     totalFats: Number,
+    // true when some quantity was converted from pieces, spoons/cups, pinch/dash or a default weight (not exact g/ml).
+    // Independent from `status`: a recipe can be "complete" AND approximate.
+    approximate: { type: Boolean, default: false },
     perServing: { type: macroSchema, default: undefined },
     allergens: { type: [String], default: [] },
     skippedIngredients: {

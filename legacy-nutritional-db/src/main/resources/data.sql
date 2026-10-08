@@ -58,3 +58,26 @@ JOIN (VALUES
     ('CHOCOLATE_MILK', 'SOY'),
     ('TUNA_CANNED', 'FISH')
 ) AS a (ingredient_code, allergen_name) ON a.ingredient_code = n.ingredient_code;
+
+-- ============================================================================
+-- Ingrédients courants ajoutés ensuite. Valeurs COPIÉES de USDA FoodData Central, base "SR Legacy"
+-- (2018-04), pour 100 g : kcal (nutriment 208), protéines (203), glucides (205), lipides (204).
+-- Chaque ligne = un aliment USDA (identifiants FDC dans le README). Aucune n'a d'allergène parmi
+-- les 14 allergènes UE : il n'y a donc volontairement aucune ligne dans allergen_map pour elles.
+-- Même mécanisme idempotent : au prochain démarrage sur le fichier H2 existant, MERGE ... KEY
+-- INSÈRE les codes absents et met à jour les autres (les ids existants sont conservés).
+-- ============================================================================
+MERGE INTO ingredient_nutrition (ingredient_code, name, calories_per_100g, proteins_g, carbs_g, fats_g)
+    KEY (ingredient_code) VALUES
+    ('ONION', 'Onion', 40, 1.1, 9.34, 0.1),
+    ('GREEN_PEPPER', 'Green bell pepper', 20, 0.86, 4.64, 0.17),
+    ('BELL_PEPPER', 'Red bell pepper', 26, 0.99, 6.03, 0.3),
+    ('GARLIC', 'Garlic', 149, 6.36, 33.1, 0.5),
+    ('CARROT', 'Carrot', 41, 0.93, 9.58, 0.24),
+    ('SALT', 'Table salt', 0, 0, 0, 0),
+    ('BEEF', 'Ground beef 85% lean, raw', 215, 18.6, 0, 15),
+    ('MANGO', 'Mango', 60, 0.82, 15, 0.38),
+    ('PLANTAIN', 'Plantain, yellow', 122, 1.3, 31.9, 0.35),
+    ('CORN', 'Sweet corn, yellow', 86, 3.27, 18.7, 1.35),
+    ('BASIL', 'Basil, fresh', 23, 3.15, 2.65, 0.64),
+    ('LETTUCE', 'Green leaf lettuce', 15, 1.36, 2.87, 0.15);
