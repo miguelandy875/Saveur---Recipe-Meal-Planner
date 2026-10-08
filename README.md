@@ -295,7 +295,3 @@ Notes: garlic is **3 g per clove** (USDA) rather than the ~5 g often quoted; the
 
 - `legacy-nutritional-db`: `mvn clean package` (endpoint tests with `MockWebServiceClient`: valid request, duplicates, fault listing all unknown codes, XSD violations).
 - Saveur: `npm test` (vitest — unit conversion, USDA piece weights, `approximate` flag, totals, XML→JSON normalisation, fault/unavailable handling, client re-creation, `NutritionCard` rendering with and without "≈") and `npm run lint`.
-
-## Project Notes
-
-The original mobile/Firebase prototype files were removed because the exam brief requires a web application using JavaScript, Node.js/Express and MongoDB.
