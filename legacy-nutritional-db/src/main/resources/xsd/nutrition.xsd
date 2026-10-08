@@ -18,6 +18,8 @@
     ingredient_nutrition.proteins_g       DECIMAL(5,2)  <-> MacroNutrientGramsType (proteins)
     ingredient_nutrition.carbs_g          DECIMAL(5,2)  <-> MacroNutrientGramsType (carbs)
     ingredient_nutrition.fats_g           DECIMAL(5,2)  <-> MacroNutrientGramsType (fats)
+    ingredient_nutrition.publisher        VARCHAR(100)  <-> PublisherType (publisher) : éditeur / source
+                                                            des valeurs nutritionnelles
     allergen_map.allergen_name            VARCHAR(50)   <-> AllergenNameType (enumeration, aussi
                                                             imposée par un CHECK SQL)
   Les restrictions XSD (totalDigits, fractionDigits, minInclusive, maxLength)
@@ -52,6 +54,18 @@
   <xsd:simpleType name="IngredientNameType">
     <xsd:annotation>
       <xsd:documentation>Libellé lisible de l'ingrédient (colonne name, VARCHAR(100)).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:minLength value="1"/>
+      <xsd:maxLength value="100"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Éditeur / source des valeurs nutritionnelles : VARCHAR(100) NOT NULL.
+       ex. "USDA FoodData Central (SR Legacy)", "Saveur demo dataset". -->
+  <xsd:simpleType name="PublisherType">
+    <xsd:annotation>
+      <xsd:documentation>Éditeur / source des valeurs nutritionnelles de l'ingrédient (colonne publisher, VARCHAR(100)).</xsd:documentation>
     </xsd:annotation>
     <xsd:restriction base="xsd:string">
       <xsd:minLength value="1"/>
@@ -144,6 +158,7 @@
       <xsd:element name="proteins" type="tns:MacroNutrientGramsType"/>
       <xsd:element name="carbs" type="tns:MacroNutrientGramsType"/>
       <xsd:element name="fats" type="tns:MacroNutrientGramsType"/>
+      <xsd:element name="publisher" type="tns:PublisherType"/>
       <xsd:element name="allergens" type="tns:AllergenListType"/>
     </xsd:sequence>
   </xsd:complexType>

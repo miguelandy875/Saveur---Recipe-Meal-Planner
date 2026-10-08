@@ -62,13 +62,24 @@ class NutritionEndpointTest {
                 .andExpect(xpath("count(/n:getNutritionalValuesResponse/n:ingredient)", NS_MAP).evaluatesTo(7))
                 .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[1]/n:caloriesPer100g", NS_MAP).evaluatesTo("40.00"))
                 .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:caloriesPer100g", NS_MAP).evaluatesTo("20.00"))
-                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:carbs", NS_MAP).evaluatesTo("4.64"));
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:carbs", NS_MAP).evaluatesTo("4.64"))
+                // publisher : source USDA pour les lignes ajoutées depuis FoodData Central
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[1]/n:publisher", NS_MAP)
+                        .evaluatesTo("USDA FoodData Central (SR Legacy)"));
     }
 
     @Test
     void xyzAndSaffronStayUnknownSoTheFaultDemoStillWorks() throws Exception {
         client.sendRequest(withPayload(request("TOMATO", "XYZ", "SAFFRON")))
                 .andExpect(clientOrSenderFault("Unknown ingredient codes: XYZ, SAFFRON"));
+    }
+
+    @Test
+    void everyIngredientCarriesItsPublisher() throws Exception {
+        client.sendRequest(withPayload(request("FLOUR_WHEAT", "ONION")))
+                .andExpect(validPayload(new ClassPathResource("xsd/nutrition.xsd")))
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[1]/n:publisher", NS_MAP).evaluatesTo("Saveur demo dataset"))
+                .andExpect(xpath("/n:getNutritionalValuesResponse/n:ingredient[2]/n:publisher", NS_MAP).evaluatesTo("USDA FoodData Central (SR Legacy)"));
     }
 
     @Test

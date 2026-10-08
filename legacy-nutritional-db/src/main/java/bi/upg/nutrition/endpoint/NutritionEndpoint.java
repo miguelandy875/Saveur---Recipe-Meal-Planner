@@ -56,6 +56,7 @@ public class NutritionEndpoint {
         xml.setProteins(row.getProteinsG());
         xml.setCarbs(row.getCarbsG());
         xml.setFats(row.getFatsG());
+        xml.setPublisher(row.getPublisher());
 
         AllergenListType allergens = objectFactory.createAllergenListType();
         for (AllergenMap allergen : row.getAllergens()) {

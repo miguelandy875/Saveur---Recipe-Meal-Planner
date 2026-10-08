@@ -40,6 +40,10 @@ public class IngredientNutrition {
     @Column(name = "fats_g", nullable = false, precision = 5, scale = 2)
     private BigDecimal fatsG;
 
+    /** Éditeur / source des valeurs nutritionnelles (ex. "USDA FoodData Central (SR Legacy)"). */
+    @Column(nullable = false, length = 100)
+    private String publisher;
+
     /** Lazy : toujours chargé via @EntityGraph dans le repository (pas d'OSIV hors MVC). */
     @OneToMany(mappedBy = "ingredient", fetch = FetchType.LAZY)
     private List<AllergenMap> allergens = new ArrayList<>();
@@ -51,5 +55,6 @@ public class IngredientNutrition {
     public BigDecimal getProteinsG() { return proteinsG; }
     public BigDecimal getCarbsG() { return carbsG; }
     public BigDecimal getFatsG() { return fatsG; }
+    public String getPublisher() { return publisher; }
     public List<AllergenMap> getAllergens() { return allergens; }
 }
