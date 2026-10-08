@@ -17,3 +17,10 @@ uploads/recipes/*
 !uploads/recipes/.gitkeep
 .env*
 !.env.example
+
+# legacy-nutritional-db (Spring Boot): build output + H2 database files
+legacy-nutritional-db/target/
+legacy-nutritional-db/data/
+*.mv.db
+*.trace.db
+*.lock.db

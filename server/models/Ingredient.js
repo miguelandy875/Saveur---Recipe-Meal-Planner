@@ -26,6 +26,17 @@ const ingredientSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    // Link with the legacy nutritional database (SOAP): e.g. "TOMATO", "FLOUR_WHEAT". Optional.
+    nutritionCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    // Typical weight in grams of ONE counted unit (piece, slice, unit...). Used to convert "3 eggs" to grams.
+    gramsPerUnit: {
+      type: Number,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

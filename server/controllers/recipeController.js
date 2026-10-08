@@ -2,6 +2,8 @@ import { Category } from '../models/Category.js';
 import { Favorite } from '../models/Favorite.js';
 import { Ingredient } from '../models/Ingredient.js';
 import { Recipe } from '../models/Recipe.js';
+import { computeRecipeNutritionFor } from '../services/nutritionService.js';
+import { suggestNutritionCode } from '../utils/nutritionCodes.js';
 import { suggestShoppingCategory } from '../utils/shoppingCategories.js';
 
 async function favoriteIdSet(userId, recipeIds) {
@@ -11,6 +13,33 @@ async function favoriteIdSet(userId, recipeIds) {
 
   const favorites = await Favorite.find({ user: userId, recipe: { $in: recipeIds } }).select('recipe');
   return new Set(favorites.map((favorite) => favorite.recipe.toString()));
+}
+
+function serializeNutrition(nutrition) {
+  if (!nutrition) return null;
+
+  return {
+    status: nutrition.status,
+    totalCalories: nutrition.totalCalories ?? null,
+    totalProteins: nutrition.totalProteins ?? null,
+    totalCarbs: nutrition.totalCarbs ?? null,
+    totalFats: nutrition.totalFats ?? null,
+    approximate: Boolean(nutrition.approximate),
+    perServing: nutrition.perServing
+      ? {
+          calories: nutrition.perServing.calories,
+          proteins: nutrition.perServing.proteins,
+          carbs: nutrition.perServing.carbs,
+          fats: nutrition.perServing.fats,
+        }
+      : null,
+    allergens: nutrition.allergens || [],
+    skippedIngredients: (nutrition.skippedIngredients || []).map((item) => ({ name: item.name, reason: item.reason })),
+    warnings: nutrition.warnings || [],
+    unavailableReason: nutrition.unavailableReason || null,
+    computedAt: nutrition.computedAt || null,
+    source: nutrition.source,
+  };
 }
 
 function serializeRecipe(recipe, favoriteIds = new Set()) {
@@ -52,6 +81,7 @@ function serializeRecipe(recipe, favoriteIds = new Set()) {
         title: step.title,
         description: step.description,
       })),
+    nutrition: serializeNutrition(recipeObject.nutrition),
     isFavorite: favoriteIds.has(id),
     createdAt: recipeObject.createdAt,
   };
@@ -71,6 +101,7 @@ async function normalizeIngredients(ingredients = []) {
         $setOnInsert: {
           name,
           defaultUnit: unit,
+          nutritionCode: suggestNutritionCode(name),
         },
         $set: {
           category: suggestShoppingCategory(name, item.category),
@@ -78,6 +109,15 @@ async function normalizeIngredients(ingredients = []) {
       },
       { new: true, upsert: true }
     );
+
+    // Ingredients created before the nutrition feature have no code yet: backfill it (never overwrite a curated one).
+    if (!ingredient.nutritionCode) {
+      ingredient.nutritionCode = suggestNutritionCode(ingredient.name);
+      await Ingredient.updateOne(
+        { _id: ingredient._id, nutritionCode: { $in: [null, ''] } },
+        { $set: { nutritionCode: ingredient.nutritionCode } }
+      );
+    }
 
     normalized.push({
       ingredient: ingredient._id,
@@ -199,6 +239,9 @@ export async function createRecipe(req, res, next) {
       return res.status(400).json({ message: 'At least one ingredient and one preparation step are required.' });
     }
 
+    // Never throws: when the legacy service is down the recipe is still created, with nutrition "unavailable".
+    const nutrition = await computeRecipeNutritionFor(normalizedIngredients, Number(servings));
+
     const recipe = await Recipe.create({
       title,
       description,
@@ -213,6 +256,7 @@ export async function createRecipe(req, res, next) {
       isPublic: isPublic !== false,
       ingredients: normalizedIngredients,
       steps: normalizedSteps,
+      nutrition,
     });
 
     const populated = await Recipe.findById(recipe._id)
@@ -272,6 +316,8 @@ export async function updateRecipe(req, res, next) {
       return res.status(400).json({ message: 'At least one ingredient and one preparation step are required.' });
     }
 
+    const nutrition = await computeRecipeNutritionFor(normalizedIngredients, Number(servings));
+
     recipe.set({
       title,
       description,
@@ -285,6 +331,7 @@ export async function updateRecipe(req, res, next) {
       isPublic: isPublic !== false,
       ingredients: normalizedIngredients,
       steps: normalizedSteps,
+      nutrition,
     });
 
     await recipe.save();
@@ -295,6 +342,40 @@ export async function updateRecipe(req, res, next) {
 
     const favorites = await favoriteIdSet(req.user?._id, [recipe._id]);
     res.json({ data: serializeRecipe(populated, favorites) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// POST /api/recipes/:id/nutrition/refresh - recompute the nutrition on demand (e.g. after an outage).
+export async function refreshRecipeNutrition(req, res, next) {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found.' });
+    }
+
+    const ownsRecipe = recipe.user.toString() === req.user._id.toString();
+    if (!ownsRecipe && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You can refresh the nutrition of your own recipes only.' });
+    }
+
+    const nutrition = await computeRecipeNutritionFor(recipe.ingredients, recipe.servings);
+
+    // Do not overwrite good data with an "unavailable" marker: report the outage instead.
+    if (nutrition.status === 'unavailable') {
+      return res.status(503).json({ message: `Nutrition could not be computed: ${nutrition.unavailableReason}` });
+    }
+
+    recipe.nutrition = nutrition;
+    await recipe.save();
+
+    const populated = await Recipe.findById(recipe._id)
+      .populate('category', 'name slug image')
+      .populate('user', 'name');
+
+    res.json({ data: serializeRecipe(populated) });
   } catch (error) {
     next(error);
   }

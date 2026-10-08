@@ -41,6 +41,33 @@ export interface RecipeStep {
   description: string;
 }
 
+export interface NutritionMacros {
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fats: number;
+}
+
+export type NutritionStatus = 'complete' | 'partial' | 'unavailable';
+
+/** Nutritional values computed from the legacy nutritional database (SOAP). `null` = never computed. */
+export interface RecipeNutrition {
+  status: NutritionStatus;
+  totalCalories: number | null;
+  totalProteins: number | null;
+  totalCarbs: number | null;
+  totalFats: number | null;
+  /** Some quantities were converted from pieces/spoons/default weights: values are approximate (shown with ≈). */
+  approximate: boolean;
+  perServing: NutritionMacros | null;
+  allergens: string[];
+  skippedIngredients: { name: string; reason: string }[];
+  warnings: string[];
+  unavailableReason: string | null;
+  computedAt: string | null;
+  source: string;
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -60,6 +87,7 @@ export interface Recipe {
   isFavorite?: boolean;
   ingredients?: RecipeIngredient[];
   steps?: RecipeStep[];
+  nutrition?: RecipeNutrition | null;
   createdAt: string;
 }
 

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================================
+  Contrat SOAP "Base Nutritionnelle" (legacy-nutritional-db)
+  ============================================================================
+  Approche CONTRACT-FIRST : ce fichier est la source de vérité.
+    - les classes Java (JAXB) sont GÉNÉRÉES depuis ce XSD par jaxb2-maven-plugin ;
+    - le WSDL (/ws/mon-service.wsdl) est GÉNÉRÉ depuis ce XSD par Spring-WS
+      (DefaultWsdl11Definition) ;
+    - les requêtes ET les réponses sont VALIDÉES contre ce XSD à l'exécution
+      (PayloadValidatingInterceptor).
+
+  Fidélité au schéma SQL (schema.sql) :
+    ingredient_nutrition.id               BIGINT        <-> xsd:long          (databaseId)
+    ingredient_nutrition.ingredient_code  VARCHAR(50)   <-> IngredientCodeType (ingredientId)
+    ingredient_nutrition.name             VARCHAR(100)  <-> IngredientNameType (name)
+    ingredient_nutrition.calories_per_100g DECIMAL(7,2) <-> CaloriesPer100gType (caloriesPer100g)
+    ingredient_nutrition.proteins_g       DECIMAL(5,2)  <-> MacroNutrientGramsType (proteins)
+    ingredient_nutrition.carbs_g          DECIMAL(5,2)  <-> MacroNutrientGramsType (carbs)
+    ingredient_nutrition.fats_g           DECIMAL(5,2)  <-> MacroNutrientGramsType (fats)
+    allergen_map.allergen_name            VARCHAR(50)   <-> AllergenNameType (enumeration, aussi
+                                                            imposée par un CHECK SQL)
+  Les restrictions XSD (totalDigits, fractionDigits, minInclusive, maxLength)
+  reprennent EXACTEMENT les contraintes de colonnes / CHECK du SQL.
+  ============================================================================
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:tns="http://upg.bi/nutrition"
+            targetNamespace="http://upg.bi/nutrition"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified"
+            version="1.0">
+
+  <!-- ======================================================================
+       1. TYPES SIMPLES (restrictions)
+       ====================================================================== -->
+
+  <!-- Code ingrédient : VARCHAR(50), UNIQUE. Majuscules, chiffres et "_" (ex. TOMATO, FLOUR_WHEAT).
+       NB : en XSD un pattern est implicitement ancré (pas de ^ ni $). -->
+  <xsd:simpleType name="IngredientCodeType">
+    <xsd:annotation>
+      <xsd:documentation>Code métier unique d'un ingrédient (colonne ingredient_code, VARCHAR(50)).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:minLength value="1"/>
+      <xsd:maxLength value="50"/>
+      <xsd:pattern value="[A-Z0-9_]+"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Libellé : VARCHAR(100) NOT NULL. -->
+  <xsd:simpleType name="IngredientNameType">
+    <xsd:annotation>
+      <xsd:documentation>Libellé lisible de l'ingrédient (colonne name, VARCHAR(100)).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:minLength value="1"/>
+      <xsd:maxLength value="100"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Identifiant technique : BIGINT auto-incrémenté, donc strictement positif. -->
+  <xsd:simpleType name="DatabaseIdType">
+    <xsd:annotation>
+      <xsd:documentation>Clé primaire technique (colonne id, BIGINT).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:long">
+      <xsd:minInclusive value="1"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Énergie pour 100 g : DECIMAL(7,2) avec CHECK (>= 0 AND <= 900).
+       900 kcal/100 g est le maximum physique (lipides purs ~ 9 kcal/g). -->
+  <xsd:simpleType name="CaloriesPer100gType">
+    <xsd:annotation>
+      <xsd:documentation>Énergie en kcal pour 100 g (colonne calories_per_100g, DECIMAL(7,2)).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:decimal">
+      <xsd:totalDigits value="7"/>
+      <xsd:fractionDigits value="2"/>
+      <xsd:minInclusive value="0"/>
+      <xsd:maxInclusive value="900"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Macronutriment pour 100 g : DECIMAL(5,2) avec CHECK (>= 0 AND <= 100).
+       On ne peut pas avoir plus de 100 g d'un nutriment dans 100 g d'aliment. -->
+  <xsd:simpleType name="MacroNutrientGramsType">
+    <xsd:annotation>
+      <xsd:documentation>Grammes de macronutriment pour 100 g d'aliment (proteins_g, carbs_g, fats_g : DECIMAL(5,2)).</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:decimal">
+      <xsd:totalDigits value="5"/>
+      <xsd:fractionDigits value="2"/>
+      <xsd:minInclusive value="0"/>
+      <xsd:maxInclusive value="100"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Allergène : VARCHAR(50) + CHECK (allergen_name IN (...)) côté SQL.
+       Les 14 allergènes majeurs de l'UE (règlement 1169/2011) ; "LACTOSE" désigne la famille "lait". -->
+  <xsd:simpleType name="AllergenNameType">
+    <xsd:annotation>
+      <xsd:documentation>Allergène (colonne allergen_name). Liste fermée, identique au CHECK SQL.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="GLUTEN"/>
+      <xsd:enumeration value="CRUSTACEANS"/>
+      <xsd:enumeration value="EGGS"/>
+      <xsd:enumeration value="FISH"/>
+      <xsd:enumeration value="PEANUTS"/>
+      <xsd:enumeration value="SOY"/>
+      <xsd:enumeration value="LACTOSE"/>
+      <xsd:enumeration value="NUTS"/>
+      <xsd:enumeration value="CELERY"/>
+      <xsd:enumeration value="MUSTARD"/>
+      <xsd:enumeration value="SESAME"/>
+      <xsd:enumeration value="SULPHITES"/>
+      <xsd:enumeration value="LUPIN"/>
+      <xsd:enumeration value="MOLLUSCS"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- ======================================================================
+       2. TYPES COMPLEXES NOMMÉS
+       ====================================================================== -->
+
+  <!-- Liste (possiblement vide) d'allergènes d'un ingrédient : table allergen_map. -->
+  <xsd:complexType name="AllergenListType">
+    <xsd:sequence>
+      <xsd:element name="allergen" type="tns:AllergenNameType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- Valeurs nutritionnelles (pour 100 g) d'UN ingrédient : une ligne de ingredient_nutrition
+       + ses lignes allergen_map. -->
+  <xsd:complexType name="IngredientNutritionType">
+    <xsd:sequence>
+      <xsd:element name="databaseId" type="tns:DatabaseIdType"/>
+      <!-- ingredientId = ingredient_code (clé métier), pas la clé technique. -->
+      <xsd:element name="ingredientId" type="tns:IngredientCodeType"/>
+      <xsd:element name="name" type="tns:IngredientNameType"/>
+      <xsd:element name="caloriesPer100g" type="tns:CaloriesPer100gType"/>
+      <xsd:element name="proteins" type="tns:MacroNutrientGramsType"/>
+      <xsd:element name="carbs" type="tns:MacroNutrientGramsType"/>
+      <xsd:element name="fats" type="tns:MacroNutrientGramsType"/>
+      <xsd:element name="allergens" type="tns:AllergenListType"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- REQUÊTE : une LISTE de codes ingrédient (au moins un, nombre non borné). -->
+  <xsd:complexType name="GetNutritionalValuesRequestType">
+    <xsd:sequence>
+      <xsd:element name="ingredientCode" type="tns:IngredientCodeType" minOccurs="1" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- RÉPONSE : une entrée par code demandé (dédoublonné), dans l'ordre de la requête. -->
+  <xsd:complexType name="GetNutritionalValuesResponseType">
+    <xsd:sequence>
+      <xsd:element name="ingredient" type="tns:IngredientNutritionType" minOccurs="1" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- DÉTAIL DE FAULT : la liste COMPLÈTE des codes inconnus (et pas seulement le premier),
+       lisible par machine, en plus du faultstring lisible par un humain. -->
+  <xsd:complexType name="GetNutritionalValuesFaultType">
+    <xsd:sequence>
+      <xsd:element name="unknownCode" type="tns:IngredientCodeType" minOccurs="1" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ======================================================================
+       3. ÉLÉMENTS RACINES (conventions Spring-WS : <operation>Request / Response / Fault)
+          DefaultWsdl11Definition en déduit l'opération "getNutritionalValues",
+          ses messages d'entrée/sortie et son <wsdl:fault>.
+       ====================================================================== -->
+  <xsd:element name="getNutritionalValuesRequest" type="tns:GetNutritionalValuesRequestType"/>
+  <xsd:element name="getNutritionalValuesResponse" type="tns:GetNutritionalValuesResponseType"/>
+  <xsd:element name="getNutritionalValuesFault" type="tns:GetNutritionalValuesFaultType"/>
+</xsd:schema>

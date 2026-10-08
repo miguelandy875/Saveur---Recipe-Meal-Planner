@@ -127,6 +127,19 @@ type TranslationKey =
   | 'recipe.delete'
   | 'recipe.deleteConfirm'
   | 'recipe.deleteError'
+  | 'nutrition.title'
+  | 'nutrition.perServing'
+  | 'nutrition.total'
+  | 'nutrition.calories'
+  | 'nutrition.proteins'
+  | 'nutrition.carbs'
+  | 'nutrition.fats'
+  | 'nutrition.allergens'
+  | 'nutrition.noAllergens'
+  | 'nutrition.partial'
+  | 'nutrition.unavailable'
+  | 'nutrition.source'
+  | 'nutrition.approximate'
   | 'planner.signInTitle'
   | 'planner.signInText'
   | 'planner.title'
@@ -338,6 +351,19 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.delete': 'Delete recipe',
     'recipe.deleteConfirm': 'Delete this recipe? This action cannot be undone.',
     'recipe.deleteError': 'The recipe could not be deleted. Please try again.',
+    'nutrition.title': 'Nutrition',
+    'nutrition.perServing': 'Per serving',
+    'nutrition.total': 'Whole recipe',
+    'nutrition.calories': 'Calories',
+    'nutrition.proteins': 'Proteins',
+    'nutrition.carbs': 'Carbs',
+    'nutrition.fats': 'Fats',
+    'nutrition.allergens': 'Allergens',
+    'nutrition.noAllergens': 'No known allergen',
+    'nutrition.partial': 'Partial values: {count} ingredient(s) could not be counted.',
+    'nutrition.unavailable': 'Nutritional values are temporarily unavailable.',
+    'nutrition.source': 'Source: legacy nutritional database',
+    'nutrition.approximate': "≈ Approximate values: some quantities were converted from pieces, spoons or estimated weights.",
     'planner.signInTitle': 'Sign in to plan meals',
     'planner.signInText': 'Meal plans belong to each authenticated user.',
     'planner.title': 'Meal Planner',
@@ -546,6 +572,19 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.delete': 'Supprimer la recette',
     'recipe.deleteConfirm': 'Supprimer cette recette ? Cette action est définitive.',
     'recipe.deleteError': 'La recette n’a pas pu être supprimée. Veuillez réessayer.',
+    'nutrition.title': 'Nutrition',
+    'nutrition.perServing': 'Par portion',
+    'nutrition.total': 'Recette entière',
+    'nutrition.calories': 'Calories',
+    'nutrition.proteins': 'Protéines',
+    'nutrition.carbs': 'Glucides',
+    'nutrition.fats': 'Lipides',
+    'nutrition.allergens': 'Allergènes',
+    'nutrition.noAllergens': 'Aucun allergène connu',
+    'nutrition.partial': 'Valeurs partielles : {count} ingrédient(s) non comptabilisé(s).',
+    'nutrition.unavailable': 'Les valeurs nutritionnelles sont temporairement indisponibles.',
+    'nutrition.source': 'Source : base nutritionnelle legacy',
+    'nutrition.approximate': "≈ Valeurs approximatives : certaines quantités ont été converties à partir de pièces, de cuillères ou de poids estimés.",
     'planner.signInTitle': 'Connectez-vous pour planifier',
     'planner.signInText': 'Les plans de repas appartiennent à chaque utilisateur.',
     'planner.title': 'Planificateur de repas',
@@ -754,6 +793,19 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.delete': 'Eliminar receta',
     'recipe.deleteConfirm': '¿Eliminar esta receta? Esta acción no se puede deshacer.',
     'recipe.deleteError': 'No se pudo eliminar la receta. Inténtalo de nuevo.',
+    'nutrition.title': 'Nutrición',
+    'nutrition.perServing': 'Por porción',
+    'nutrition.total': 'Receta completa',
+    'nutrition.calories': 'Calorías',
+    'nutrition.proteins': 'Proteínas',
+    'nutrition.carbs': 'Carbohidratos',
+    'nutrition.fats': 'Grasas',
+    'nutrition.allergens': 'Alérgenos',
+    'nutrition.noAllergens': 'Ningún alérgeno conocido',
+    'nutrition.partial': 'Valores parciales: {count} ingrediente(s) no contabilizado(s).',
+    'nutrition.unavailable': 'Los valores nutricionales no están disponibles temporalmente.',
+    'nutrition.source': 'Fuente: base nutricional heredada',
+    'nutrition.approximate': "≈ Valores aproximados: algunas cantidades se convirtieron a partir de piezas, cucharas o pesos estimados.",
     'planner.signInTitle': 'Inicia sesión para planificar',
     'planner.signInText': 'Los planes pertenecen a cada usuario.',
     'planner.title': 'Planificador de comidas',
@@ -962,6 +1014,19 @@ const dictionaries: Record<LanguageCode, Dictionary> = {
     'recipe.delete': 'Elimina ricetta',
     'recipe.deleteConfirm': 'Eliminare questa ricetta? Questa azione non può essere annullata.',
     'recipe.deleteError': 'Impossibile eliminare la ricetta. Riprova.',
+    'nutrition.title': 'Nutrizione',
+    'nutrition.perServing': 'Per porzione',
+    'nutrition.total': 'Ricetta intera',
+    'nutrition.calories': 'Calorie',
+    'nutrition.proteins': 'Proteine',
+    'nutrition.carbs': 'Carboidrati',
+    'nutrition.fats': 'Grassi',
+    'nutrition.allergens': 'Allergeni',
+    'nutrition.noAllergens': 'Nessun allergene noto',
+    'nutrition.partial': 'Valori parziali: {count} ingrediente/i non conteggiato/i.',
+    'nutrition.unavailable': 'I valori nutrizionali sono temporaneamente non disponibili.',
+    'nutrition.source': 'Fonte: database nutrizionale legacy',
+    'nutrition.approximate': "≈ Valori approssimativi: alcune quantità sono state convertite da pezzi, cucchiai o pesi stimati.",
     'planner.signInTitle': 'Accedi per pianificare',
     'planner.signInText': 'I piani pasto appartengono a ogni utente.',
     'planner.title': 'Piano pasti',

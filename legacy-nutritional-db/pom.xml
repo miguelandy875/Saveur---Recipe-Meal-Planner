@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Spring Boot 3.5.x (Jakarta EE 10 / Spring-WS 4.1). Boot 4.x is deliberately avoided: starter names changed. -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.16</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>bi.upg</groupId>
+  <artifactId>legacy-nutritional-db</artifactId>
+  <version>1.0.0</version>
+  <name>legacy-nutritional-db</name>
+  <description>Legacy nutritional database exposed through a contract-first SOAP service (Spring-WS + JPA + H2)</description>
+
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+    <!-- Spring-WS: @Endpoint, @PayloadRoot, MessageDispatcherServlet, DefaultWsdl11Definition -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web-services</artifactId>
+    </dependency>
+    <!-- Spring Data JPA: repositories used by the endpoint -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <!-- WSDL4J: needed by Spring-WS to build/serve the WSDL -->
+    <dependency>
+      <groupId>wsdl4j</groupId>
+      <artifactId>wsdl4j</artifactId>
+    </dependency>
+    <!-- JAXB runtime (Jakarta XML Binding) used at run time by the XJC-generated classes -->
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+    </dependency>
+    <!-- SQL database: H2 in file mode (see application.properties) -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.ws</groupId>
+      <artifactId>spring-ws-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <!--
+        Contract-first: the JAXB classes are GENERATED from src/main/resources/xsd/nutrition.xsd
+        (phase generate-sources). Nothing under bi.upg.nutrition.generated is hand-written.
+        jaxb2-maven-plugin 4.x is required: it embeds JAXB 4 and so generates jakarta.xml.bind.*
+        (2.x/3.x generate javax.xml.bind.*, which Spring-WS 4 cannot use).
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jaxb2-maven-plugin</artifactId>
+        <version>4.0.0</version>
+        <executions>
+          <execution>
+            <id>xjc-nutrition</id>
+            <goals>
+              <goal>xjc</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <sources>
+            <source>${project.basedir}/src/main/resources/xsd/nutrition.xsd</source>
+          </sources>
+          <packageName>bi.upg.nutrition.generated</packageName>
+          <clearOutputDir>true</clearOutputDir>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

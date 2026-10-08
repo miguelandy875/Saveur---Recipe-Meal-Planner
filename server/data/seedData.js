@@ -3,6 +3,8 @@ import { Category } from '../models/Category.js';
 import { Ingredient } from '../models/Ingredient.js';
 import { Recipe } from '../models/Recipe.js';
 import { User } from '../models/User.js';
+import { gramsPerPieceFor } from '../utils/gramsPerPiece.js';
+import { suggestNutritionCode } from '../utils/nutritionCodes.js';
 import { SHOPPING_CATEGORIES } from '../utils/shoppingCategories.js';
 
 const categorySeeds = [
@@ -585,11 +587,22 @@ export async function seedDemoData() {
   const ingredients = byName(
     await Promise.all(
       ingredientSeeds.map((ingredient) =>
-        Ingredient.findOneAndUpdate({ name: ingredient.name }, ingredient, {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert: true,
-        })
+        Ingredient.findOneAndUpdate(
+          { name: ingredient.name },
+          {
+            ...ingredient,
+            nutritionCode: suggestNutritionCode(ingredient.name),
+            // always rewritten from the USDA table, so weights stored by an older seed are corrected
+            ...(gramsPerPieceFor(suggestNutritionCode(ingredient.name)) && {
+              gramsPerUnit: gramsPerPieceFor(suggestNutritionCode(ingredient.name)),
+            }),
+          },
+          {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true,
+          }
+        )
       )
     )
   );
