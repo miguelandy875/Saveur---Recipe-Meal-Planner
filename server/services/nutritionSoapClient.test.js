@@ -16,16 +16,17 @@ describe('normalizeResponse (XML-derived object -> clean JSON)', () => {
   it('converts decimals/longs to numbers and always returns allergens arrays', () => {
     const items = normalizeResponse({
       ingredient: [
-        { databaseId: '2', ingredientId: 'FLOUR_WHEAT', name: 'Wheat flour', caloriesPer100g: '364.00', proteins: '10.30', carbs: '76.30', fats: '1.00', allergens: { allergen: 'GLUTEN' } },
+        { databaseId: '2', ingredientId: 'FLOUR_WHEAT', name: 'Wheat flour', caloriesPer100g: '364.00', proteins: '10.30', carbs: '76.30', fats: '1.00', publisher: 'Saveur demo dataset', allergens: { allergen: 'GLUTEN' } },
         { databaseId: '6', ingredientId: 'TOMATO', name: 'Tomato', caloriesPer100g: '18.00', proteins: '0.90', carbs: '3.90', fats: '0.20', allergens: '' },
         { databaseId: '24', ingredientId: 'CHOCOLATE_MILK', name: 'Milk chocolate', caloriesPer100g: '535.00', proteins: '7.70', carbs: '59.40', fats: '29.70', allergens: { allergen: ['LACTOSE', 'SOY'] } },
       ],
     });
 
     expect(items[0]).toEqual({
-      code: 'FLOUR_WHEAT', databaseId: 2, name: 'Wheat flour', caloriesPer100g: 364, proteins: 10.3, carbs: 76.3, fats: 1, allergens: ['GLUTEN'],
+      code: 'FLOUR_WHEAT', databaseId: 2, name: 'Wheat flour', caloriesPer100g: 364, proteins: 10.3, carbs: 76.3, fats: 1, publisher: 'Saveur demo dataset', allergens: ['GLUTEN'],
     });
     expect(items[1].allergens).toEqual([]);
+    expect(items[1].publisher).toBeNull(); // service answer without publisher -> null, not "undefined"
     expect(items[2].allergens).toEqual(['LACTOSE', 'SOY']);
   });
 
@@ -33,6 +34,7 @@ describe('normalizeResponse (XML-derived object -> clean JSON)', () => {
     const one = normalizeResponse({ ingredient: { databaseId: 1, ingredientId: 'BUTTER', name: 'Butter', caloriesPer100g: 717, proteins: 0.9, carbs: 0.1, fats: 81.1 } });
     expect(one).toHaveLength(1);
     expect(one[0].allergens).toEqual([]);
+    expect(one[0].publisher).toBeNull();
     expect(normalizeResponse(undefined)).toEqual([]);
   });
 });

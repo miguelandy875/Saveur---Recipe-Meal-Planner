@@ -47,6 +47,8 @@ export function normalizeResponse(raw) {
     proteins: Number(item.proteins),
     carbs: Number(item.carbs),
     fats: Number(item.fats),
+    // publisher / source of the values (e.g. "USDA FoodData Central (SR Legacy)"); null if an older service omits it
+    publisher: item.publisher == null ? null : String(item.publisher),
     allergens: toArray(item.allergens?.allergen).map(String),
   }));
 }
@@ -98,7 +100,7 @@ export function resetNutritionClient() {
 /**
  * ONE SOAP call for a list of ingredient codes.
  * @param {string[]} codes
- * @returns {Promise<Array<{code, databaseId, name, caloriesPer100g, proteins, carbs, fats, allergens: string[]}>>}
+ * @returns {Promise<Array<{code, databaseId, name, caloriesPer100g, proteins, carbs, fats, publisher, allergens: string[]}>>}
  * @throws {NutritionFaultError | NutritionUnavailableError}
  */
 export async function getNutritionalValues(codes) {
