@@ -1,5 +1,7 @@
 # Saveur - Recipe Meal Planner
 
+[🇫🇷 Français](README.fr.md) · 🇬🇧 English
+
 Saveur is a JavaScript full-stack recipe web application built for the exam project:
 frontend React, backend Node.js/Express, MongoDB with Mongoose, REST APIs, and authenticated users.
 
@@ -293,5 +295,5 @@ Notes: garlic is **3 g per clove** (USDA) rather than the ~5 g often quoted; the
 
 ### Tests
 
-- `legacy-nutritional-db`: `mvn clean package` (endpoint tests with `MockWebServiceClient`: valid request, duplicates, fault listing all unknown codes, XSD violations).
+- `legacy-nutritional-db`: `mvn clean package` (endpoint tests with `MockWebServiceClient`: valid request, duplicates, fault listing all unknown codes, XSD violations, new USDA codes, `XYZ`/`SAFFRON` still unknown).
 - Saveur: `npm test` (vitest — unit conversion, USDA piece weights, `approximate` flag, totals, XML→JSON normalisation, fault/unavailable handling, client re-creation, `NutritionCard` rendering with and without "≈") and `npm run lint`.
