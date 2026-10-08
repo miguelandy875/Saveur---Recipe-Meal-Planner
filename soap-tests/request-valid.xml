@@ -6,6 +6,7 @@
       <n:ingredientCode>EGG_WHOLE</n:ingredientCode>
       <n:ingredientCode>TOMATO</n:ingredientCode>
       <n:ingredientCode>CHOCOLATE_MILK</n:ingredientCode>
+      <n:ingredientCode>ONION</n:ingredientCode>
     </n:getNutritionalValuesRequest>
   </soapenv:Body>
 </soapenv:Envelope>

@@ -213,6 +213,7 @@ curl -s -H 'Content-Type: text/xml; charset=utf-8' --data @soap-tests/request-va
 | `proteins_g` DECIMAL(5,2) | `MacroNutrientGramsType` = `xsd:decimal`, totalDigits 5, fractionDigits 2, 0..100 | `BigDecimal` | `proteins: number` | `totalProteins: Number` |
 | `carbs_g` DECIMAL(5,2) | `MacroNutrientGramsType` | `BigDecimal` | `carbs: number` | `totalCarbs: Number` |
 | `fats_g` DECIMAL(5,2) | `MacroNutrientGramsType` | `BigDecimal` | `fats: number` | `totalFats: Number` |
+| `publisher` VARCHAR(100) NOT NULL (défaut `'Saveur demo dataset'`) | `PublisherType` = `xsd:string`, 1..100 | `String` | `publisher: string \| null` | non stocké |
 | `allergen_map.allergen_name` VARCHAR(50) + `CHECK IN (...)` (FK `ingredient_id` → `ingredient_nutrition.id`) | `AllergenNameType` = énumération (14 allergènes UE), listée dans `AllergenListType` (`allergen` 0..unbounded) | `enum AllergenNameType` | `allergens: string[]` (toujours un tableau) | `nutrition.allergens: [String]` (uniques, triés) |
 | liste de la requête | `GetNutritionalValuesRequestType` : `ingredientCode` **minOccurs 1, maxOccurs unbounded** | `List<String>` | `{ ingredientCode: string[] }` | — |
 
@@ -222,7 +223,7 @@ requêtes comme les réponses contre le XSD** (`PayloadValidatingInterceptor`). 
 
 ### Décisions de conception et hypothèses
 
-- **Colonne `publisher VARCHAR` omise** : l'énoncé la place sur `ingredient_nutrition`, mais c'est une erreur de copier-coller issue du scénario d'un autre groupe (une table nutritionnelle n'a pas d'éditeur). `carbs_g` et `fats_g` ont été **ajoutées** car elles sont exigées en sortie.
+- **Colonne `publisher`** : l'énoncé place une colonne `publisher VARCHAR` sur `ingredient_nutrition`. Nous l'interprétons comme l'**éditeur / la source des valeurs nutritionnelles** de chaque ligne ; elle est stockée en `VARCHAR(100) NOT NULL` et renvoyée dans chaque `<ingredient>` de la réponse SOAP sous le nom `publisher` (`xsd:string`, `PublisherType`). Les 12 lignes copiées de l'USDA portent `USDA FoodData Central (SR Legacy)` ; les 28 lignes d'origine portent `Saveur demo dataset`. L'adaptateur Node la transmet telle quelle (`publisher`, `null` si un ancien service l'omet) ; elle n'est pas stockée dans MongoDB. `carbs_g` et `fats_g` ont été **ajoutées** car elles sont exigées en sortie.
 - **`databaseId` (xsd:long) supplémentaire** dans chaque résultat pour que la clé BIGINT apparaisse dans le contrat ; `ingredientId` porte la clé métier `ingredient_code`, comme demandé.
 - **La liste des allergènes est une énumération** (14 allergènes UE, `LACTOSE` = famille du lait, `NUTS` = fruits à coque, comme dans l'énoncé) avec un `CHECK` SQL équivalent, de sorte que XSD et SQL restent équivalents.
 - **Types nommés partout** (qualité du contrat). Comme les types nommés n'ont pas de `@XmlRootElement`, l'endpoint échange des `JAXBElement<…>` construits avec l'`ObjectFactory` générée.
@@ -290,7 +291,7 @@ Remarques : l'ail vaut **3 g par gousse** (USDA) et non les ~5 g souvent cités 
 
 #### Comment les nouvelles lignes arrivent dans un fichier H2 existant
 
-`application.properties` définit `spring.sql.init.mode=always` : Spring exécute donc `schema.sql` et `data.sql` à **chaque** démarrage, y compris sur un `data/nutrition-db.mv.db` existant. `schema.sql` ne contient que des `CREATE TABLE IF NOT EXISTS` ; `data.sql` utilise `MERGE INTO … KEY (ingredient_code)` (et `KEY (ingredient_id, allergen_name)` pour les allergènes) : un code absent est **inséré**, un code existant est **mis à jour sur place** (son `id` est conservé : pas d'erreur de clé dupliquée ni de rupture de clé étrangère). `mvn clean` ne touche jamais à `legacy-nutritional-db/data/`. Limite : `MERGE` ne **supprime** jamais ; retirer une ligne de `data.sql` ne la retire donc pas d'un fichier existant (supprimer le fichier, ou lancer un `DELETE` explicite, pour réinitialiser).
+`application.properties` définit `spring.sql.init.mode=always` : Spring exécute donc `schema.sql` et `data.sql` à **chaque** démarrage, y compris sur un `data/nutrition-db.mv.db` existant. `schema.sql` ne contient que des `CREATE TABLE IF NOT EXISTS` ; `data.sql` utilise `MERGE INTO … KEY (ingredient_code)` (et `KEY (ingredient_id, allergen_name)` pour les allergènes) : un code absent est **inséré**, un code existant est **mis à jour sur place** (son `id` est conservé : pas d'erreur de clé dupliquée ni de rupture de clé étrangère). La colonne `publisher` ayant été ajoutée ensuite, `schema.sql` exécute aussi `ALTER TABLE ingredient_nutrition ADD COLUMN IF NOT EXISTS publisher …` (sans effet sur un fichier neuf ou déjà migré) : un fichier H2 existant reçoit la colonne au démarrage suivant, ses lignes prennent la valeur par défaut, puis `data.sql` met le bon éditeur sur chaque ligne. `mvn clean` ne touche jamais à `legacy-nutritional-db/data/`. Limite : `MERGE` ne **supprime** jamais ; retirer une ligne de `data.sql` ne la retire donc pas d'un fichier existant (supprimer le fichier, ou lancer un `DELETE` explicite, pour réinitialiser).
 
 ### Tests
 

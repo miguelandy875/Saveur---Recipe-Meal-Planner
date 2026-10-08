@@ -213,6 +213,7 @@ curl -s -H 'Content-Type: text/xml; charset=utf-8' --data @soap-tests/request-va
 | `proteins_g` DECIMAL(5,2) | `MacroNutrientGramsType` = `xsd:decimal`, totalDigits 5, fractionDigits 2, 0..100 | `BigDecimal` | `proteins: number` | `totalProteins: Number` |
 | `carbs_g` DECIMAL(5,2) | `MacroNutrientGramsType` | `BigDecimal` | `carbs: number` | `totalCarbs: Number` |
 | `fats_g` DECIMAL(5,2) | `MacroNutrientGramsType` | `BigDecimal` | `fats: number` | `totalFats: Number` |
+| `publisher` VARCHAR(100) NOT NULL (default `'Saveur demo dataset'`) | `PublisherType` = `xsd:string`, 1..100 | `String` | `publisher: string \| null` | not stored |
 | `allergen_map.allergen_name` VARCHAR(50) + `CHECK IN (...)` (FK `ingredient_id` → `ingredient_nutrition.id`) | `AllergenNameType` = enumeration (14 EU allergens), listed in `AllergenListType` (`allergen` 0..unbounded) | `enum AllergenNameType` | `allergens: string[]` (always an array) | `nutrition.allergens: [String]` (unique, sorted) |
 | request list | `GetNutritionalValuesRequestType`: `ingredientCode` **minOccurs 1, maxOccurs unbounded** | `List<String>` | `{ ingredientCode: string[] }` | — |
 
@@ -222,7 +223,7 @@ requests and responses against the XSD** (`PayloadValidatingInterceptor`). The f
 
 ### Design decisions and assumptions
 
-- **`publisher VARCHAR` column omitted**: the brief lists it on `ingredient_nutrition`, but it is a copy-paste error from another group's scenario (a nutritional table has no publisher). `carbs_g` and `fats_g` were **added** because they are required in the output.
+- **`publisher` column**: the brief lists a `publisher VARCHAR` column on `ingredient_nutrition`. We interpret it as the **publisher / source of the nutritional values** of each row, stored as `VARCHAR(100) NOT NULL` and returned in every `<ingredient>` of the SOAP response as `publisher` (`xsd:string`, `PublisherType`). The 12 rows copied from USDA carry `USDA FoodData Central (SR Legacy)`; the 28 original rows carry `Saveur demo dataset`. The Node adapter passes it through (`publisher`, `null` if an older service omits it); it is not stored in MongoDB. `carbs_g` and `fats_g` were **added** because they are required in the output.
 - **Extra `databaseId` (xsd:long)** in each result so that the BIGINT key appears in the contract; `ingredientId` carries the business key `ingredient_code` as requested.
 - **Allergen list is an enumeration** (EU 14 allergens, `LACTOSE` = milk family, `NUTS` = tree nuts, as in the brief) with a matching SQL `CHECK`, so XSD and SQL stay equivalent.
 - **Named types everywhere** (contract quality). Because named types have no `@XmlRootElement`, the endpoint exchanges `JAXBElement<…>` built with the generated `ObjectFactory`.
@@ -290,7 +291,7 @@ Notes: garlic is **3 g per clove** (USDA) rather than the ~5 g often quoted; the
 
 #### How new rows reach an existing H2 file
 
-`application.properties` sets `spring.sql.init.mode=always`, so Spring runs `schema.sql` and `data.sql` on **every** start, including on an existing `data/nutrition-db.mv.db`. `schema.sql` only has `CREATE TABLE IF NOT EXISTS`; `data.sql` uses `MERGE INTO … KEY (ingredient_code)` (and `KEY (ingredient_id, allergen_name)` for allergens): a code that is absent is **inserted**, a code that exists is **updated in place** (its `id` is kept, so no duplicate-key error and no foreign-key breakage). `mvn clean` never touches `legacy-nutritional-db/data/`. Limit: `MERGE` never **deletes**, so removing a row from `data.sql` does not remove it from an existing file (delete the file, or run an explicit `DELETE`, to reset).
+`application.properties` sets `spring.sql.init.mode=always`, so Spring runs `schema.sql` and `data.sql` on **every** start, including on an existing `data/nutrition-db.mv.db`. `schema.sql` only has `CREATE TABLE IF NOT EXISTS`; `data.sql` uses `MERGE INTO … KEY (ingredient_code)` (and `KEY (ingredient_id, allergen_name)` for allergens): a code that is absent is **inserted**, a code that exists is **updated in place** (its `id` is kept, so no duplicate-key error and no foreign-key breakage). The `publisher` column was added later, so `schema.sql` also runs `ALTER TABLE ingredient_nutrition ADD COLUMN IF NOT EXISTS publisher …` (a no-op on a new or already migrated file): an existing H2 file gets the column on the next start, its rows receive the default value, and `data.sql` then sets the right publisher on every row. `mvn clean` never touches `legacy-nutritional-db/data/`. Limit: `MERGE` never **deletes**, so removing a row from `data.sql` does not remove it from an existing file (delete the file, or run an explicit `DELETE`, to reset).
 
 
 ### Tests
