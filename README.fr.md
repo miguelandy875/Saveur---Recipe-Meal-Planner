@@ -295,5 +295,5 @@ Remarques : l'ail vaut **3 g par gousse** (USDA) et non les ~5 g souvent cités 
 
 ### Tests
 
-- `legacy-nutritional-db` : `mvn clean package` (tests de l'endpoint avec `MockWebServiceClient` : requête valide, doublons, faute listant tous les codes inconnus, violations du XSD, nouveaux codes USDA, `XYZ`/`SAFFRON` toujours inconnus).
+- `legacy-nutritional-db` : `mvn clean package` (tests de l'endpoint avec `MockWebServiceClient` : requête valide, doublons, faute listant tous les codes inconnus, violations du XSD, nouveaux codes USDA, `XYZ`/`SAFFRON` toujours inconnus, `publisher` présent sur chaque ingrédient).
 - Saveur : `npm test` (vitest — conversion d'unités, poids par pièce USDA, indicateur `approximate`, totaux, normalisation XML→JSON, gestion de la faute / de l'indisponibilité, recréation du client, rendu de `NutritionCard` avec et sans « ≈ ») et `npm run lint`.
